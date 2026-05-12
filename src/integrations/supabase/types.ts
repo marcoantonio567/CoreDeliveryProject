@@ -14,16 +14,281 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      certificates: {
+        Row: {
+          id: string
+          issued_at: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          issued_at?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          issued_at?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donations: {
+        Row: {
+          amount: number | null
+          created_at: string
+          description: string
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          description: string
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          contact_info: string
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          location: string
+          name: string
+          owner_id: string
+          quantity: number
+        }
+        Insert: {
+          contact_info?: string
+          created_at?: string
+          description: string
+          id?: string
+          images?: string[]
+          location: string
+          name: string
+          owner_id: string
+          quantity?: number
+        }
+        Update: {
+          contact_info?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[]
+          location?: string
+          name?: string
+          owner_id?: string
+          quantity?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          completion_status: Database["public"]["Enums"]["completion_status"]
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          improvement_type: string
+          location: string
+          name: string
+          owner_id: string
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+        }
+        Insert: {
+          completion_status?: Database["public"]["Enums"]["completion_status"]
+          created_at?: string
+          description: string
+          id?: string
+          images?: string[]
+          improvement_type: string
+          location: string
+          name: string
+          owner_id: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Update: {
+          completion_status?: Database["public"]["Enums"]["completion_status"]
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[]
+          improvement_type?: string
+          location?: string
+          name?: string
+          owner_id?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      volunteer_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      completion_status:
+        | "in_progress"
+        | "completion_requested"
+        | "completed"
+        | "completion_rejected"
+      project_status: "pending" | "approved" | "rejected" | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +415,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      completion_status: [
+        "in_progress",
+        "completion_requested",
+        "completed",
+        "completion_rejected",
+      ],
+      project_status: ["pending", "approved", "rejected", "disabled"],
+    },
   },
 } as const
