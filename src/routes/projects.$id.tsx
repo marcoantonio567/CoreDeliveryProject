@@ -27,14 +27,10 @@ function ProjectDetail() {
     setP(data);
     const { data: v } = await supabase
       .from("volunteer_requests")
-      .select("id, message, created_at, user_id, profiles:profiles!volunteer_requests_user_id_fkey(display_name)")
+      .select("id, message, created_at, user_id")
       .eq("project_id", id)
       .order("created_at", { ascending: false });
-    // fallback without FK relation
-    if (!v) {
-      const { data: v2 } = await supabase.from("volunteer_requests").select("id, message, created_at, user_id").eq("project_id", id).order("created_at", { ascending: false });
-      setVolunteers(v2 || []);
-    } else setVolunteers(v);
+    setVolunteers(v || []);
     const { data: d } = await supabase.from("donations").select("id, description, amount, created_at, user_id").eq("project_id", id).order("created_at", { ascending: false });
     setDonations(d || []);
   };
