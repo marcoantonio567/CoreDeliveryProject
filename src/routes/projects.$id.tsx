@@ -19,9 +19,34 @@ function ProjectDetail() {
   const [donationDesc, setDonationDesc] = useState("");
   const [donationAmt, setDonationAmt] = useState("");
   const [reportReason, setReportReason] = useState("");
+  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
 
-  const load = () => supabase.from("projects").select("*").eq("id", id).maybeSingle().then(({ data }) => setP(data));
+  const load = async () => {
+    const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
+    setP(data);
+    const { data: v } = await supabase
+      .from("volunteer_requests")
+      .select("id, message, created_at, user_id")
+      .eq("project_id", id)
+      .order("created_at", { ascending: false });
+    setVolunteers(v || []);
+    const { data: d } = await supabase.from("donations").select("id, description, amount, created_at, user_id").eq("project_id", id).order("created_at", { ascending: false });
+    setDonations(d || []);
+  };
   useEffect(() => { load(); }, [id]);
+
+  // resolve names for volunteers/donations
+  const [names, setNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const ids = Array.from(new Set([...volunteers.map(v => v.user_id), ...donations.map(d => d.user_id)].filter(Boolean)));
+    if (ids.length === 0) return;
+    supabase.from("profiles").select("id, display_name").in("id", ids).then(({ data }) => {
+      const map: Record<string, string> = {};
+      (data || []).forEach((r: any) => { map[r.id] = r.display_name; });
+      setNames(map);
+    });
+  }, [volunteers, donations]);
 
   if (!p) return <div className="min-h-screen flex flex-col"><Header /><main className="flex-1 grid place-items-center"><p>Carregando...</p></main></div>;
 
@@ -94,6 +119,42 @@ function ProjectDetail() {
             <Button onClick={report} variant="destructive" className="mt-2 w-full" size="sm">Enviar denúncia</Button>
           </div>
         </div>
+
+        {user?.id === p.owner_id && (
+          <div className="mt-10 grid md:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><HandHeart className="h-4 w-4 text-primary" />Voluntários ({volunteers.length})</h3>
+              {volunteers.length === 0 ? <p className="text-sm text-muted-foreground">Ninguém se voluntariou ainda.</p> : (
+                <ul className="space-y-3">
+                  {volunteers.map((v) => (
+                    <li key={v.id} className="text-sm border-b border-border pb-2 last:border-0">
+                      <p className="font-medium">{names[v.user_id] || "Usuário"}</p>
+                      {v.message && <p className="text-muted-foreground mt-1 whitespace-pre-wrap">{v.message}</p>}
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(v.created_at).toLocaleString("pt-BR")}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" />Doações ({donations.length})</h3>
+              {donations.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma doação registrada.</p> : (
+                <ul className="space-y-3">
+                  {donations.map((d) => (
+                    <li key={d.id} className="text-sm border-b border-border pb-2 last:border-0 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{names[d.user_id] || "Doador"}</p>
+                        <p className="text-muted-foreground">{d.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{new Date(d.created_at).toLocaleString("pt-BR")}</p>
+                      </div>
+                      {d.amount && <span className="font-semibold text-primary whitespace-nowrap">R$ {Number(d.amount).toFixed(2)}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
