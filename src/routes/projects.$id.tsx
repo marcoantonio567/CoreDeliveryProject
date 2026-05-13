@@ -19,9 +19,38 @@ function ProjectDetail() {
   const [donationDesc, setDonationDesc] = useState("");
   const [donationAmt, setDonationAmt] = useState("");
   const [reportReason, setReportReason] = useState("");
+  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
 
-  const load = () => supabase.from("projects").select("*").eq("id", id).maybeSingle().then(({ data }) => setP(data));
+  const load = async () => {
+    const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
+    setP(data);
+    const { data: v } = await supabase
+      .from("volunteer_requests")
+      .select("id, message, created_at, user_id, profiles:profiles!volunteer_requests_user_id_fkey(display_name)")
+      .eq("project_id", id)
+      .order("created_at", { ascending: false });
+    // fallback without FK relation
+    if (!v) {
+      const { data: v2 } = await supabase.from("volunteer_requests").select("id, message, created_at, user_id").eq("project_id", id).order("created_at", { ascending: false });
+      setVolunteers(v2 || []);
+    } else setVolunteers(v);
+    const { data: d } = await supabase.from("donations").select("id, description, amount, created_at, user_id").eq("project_id", id).order("created_at", { ascending: false });
+    setDonations(d || []);
+  };
   useEffect(() => { load(); }, [id]);
+
+  // resolve names for volunteers/donations
+  const [names, setNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const ids = Array.from(new Set([...volunteers.map(v => v.user_id), ...donations.map(d => d.user_id)].filter(Boolean)));
+    if (ids.length === 0) return;
+    supabase.from("profiles").select("id, display_name").in("id", ids).then(({ data }) => {
+      const map: Record<string, string> = {};
+      (data || []).forEach((r: any) => { map[r.id] = r.display_name; });
+      setNames(map);
+    });
+  }, [volunteers, donations]);
 
   if (!p) return <div className="min-h-screen flex flex-col"><Header /><main className="flex-1 grid place-items-center"><p>Carregando...</p></main></div>;
 
