@@ -76,9 +76,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "ConstruirJuntos — Voluntariado e Doações para Moradia" },
       { name: "description", content: "Plataforma que conecta voluntários, doadores e comunidades para melhorias habitacionais." },
-      { property: "og:title", content: "ConstruirJuntos" },
-      { property: "og:description", content: "Conectamos voluntários, doadores e projetos de moradia." },
+      { property: "og:title", content: "ConstruirJuntos — Voluntariado e Doações para Moradia" },
+      { property: "og:description", content: "Plataforma que conecta voluntários, doadores e comunidades para melhorias habitacionais." },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "ConstruirJuntos — Voluntariado e Doações para Moradia" },
+      { name: "twitter:description", content: "Plataforma que conecta voluntários, doadores e comunidades para melhorias habitacionais." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/02f0020a-f9ff-4305-aa4b-8d98acbebfc5/id-preview-60d572b1--6c9e1e21-4742-41da-a054-df9dfeb037ad.lovable.app-1778686854725.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/02f0020a-f9ff-4305-aa4b-8d98acbebfc5/id-preview-60d572b1--6c9e1e21-4742-41da-a054-df9dfeb037ad.lovable.app-1778686854725.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {
