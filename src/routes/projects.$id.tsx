@@ -119,6 +119,42 @@ function ProjectDetail() {
             <Button onClick={report} variant="destructive" className="mt-2 w-full" size="sm">Enviar denúncia</Button>
           </div>
         </div>
+
+        {user?.id === p.owner_id && (
+          <div className="mt-10 grid md:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><HandHeart className="h-4 w-4 text-primary" />Voluntários ({volunteers.length})</h3>
+              {volunteers.length === 0 ? <p className="text-sm text-muted-foreground">Ninguém se voluntariou ainda.</p> : (
+                <ul className="space-y-3">
+                  {volunteers.map((v) => (
+                    <li key={v.id} className="text-sm border-b border-border pb-2 last:border-0">
+                      <p className="font-medium">{names[v.user_id] || "Usuário"}</p>
+                      {v.message && <p className="text-muted-foreground mt-1 whitespace-pre-wrap">{v.message}</p>}
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(v.created_at).toLocaleString("pt-BR")}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" />Doações ({donations.length})</h3>
+              {donations.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma doação registrada.</p> : (
+                <ul className="space-y-3">
+                  {donations.map((d) => (
+                    <li key={d.id} className="text-sm border-b border-border pb-2 last:border-0 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{names[d.user_id] || "Doador"}</p>
+                        <p className="text-muted-foreground">{d.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{new Date(d.created_at).toLocaleString("pt-BR")}</p>
+                      </div>
+                      {d.amount && <span className="font-semibold text-primary whitespace-nowrap">R$ {Number(d.amount).toFixed(2)}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
