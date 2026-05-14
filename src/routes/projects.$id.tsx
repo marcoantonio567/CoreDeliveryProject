@@ -155,8 +155,7 @@ function ProjectDetail() {
           </div>
           <Button onClick={submitRequest} className="mt-3" size="sm">Enviar solicitação</Button>
         </div>
-
-
+        {user?.id === p.owner_id && (
           <div className="mt-10 grid md:grid-cols-2 gap-4">
             <div className="rounded-xl border border-border bg-card p-5">
               <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><HandHeart className="h-4 w-4 text-primary" />Voluntários ({volunteers.length})</h3>
@@ -184,6 +183,25 @@ function ProjectDetail() {
                         <p className="text-xs text-muted-foreground mt-1">{new Date(d.created_at).toLocaleString("pt-BR")}</p>
                       </div>
                       {d.amount && <span className="font-semibold text-primary whitespace-nowrap">R$ {Number(d.amount).toFixed(2)}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5 md:col-span-2">
+              <h3 className="font-semibold mb-3">Solicitações recebidas ({requests.length})</h3>
+              {requests.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma solicitação ainda.</p> : (
+                <ul className="space-y-3">
+                  {requests.map((r) => (
+                    <li key={r.id} className="text-sm border-b border-border pb-2 last:border-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium capitalize">{r.request_type === "frete" ? "Ajuda de custo / frete" : r.request_type}</span>
+                        <span className="text-xs rounded-full bg-secondary px-2 py-0.5">{r.status}</span>
+                      </div>
+                      <p className="text-muted-foreground mt-1 whitespace-pre-wrap">{r.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {names[r.user_id] || "Usuário"} {r.quantity ? `· Qtd: ${r.quantity}` : ""} {r.contact_info ? `· ${r.contact_info}` : ""} · {new Date(r.created_at).toLocaleString("pt-BR")}
+                      </p>
                     </li>
                   ))}
                 </ul>
