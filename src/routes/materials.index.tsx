@@ -14,7 +14,7 @@ function Materials() {
   const [items, setItems] = useState<any[]>([]);
   const [q, setQ] = useState("");
   useEffect(() => {
-    let query = supabase.from("materials").select("*").order("created_at", { ascending: false });
+    let query = supabase.from("materials").select("*").eq("status", "approved").order("created_at", { ascending: false });
     if (q) query = query.ilike("name", `%${q}%`);
     query.then(({ data }) => setItems(data || []));
   }, [q]);

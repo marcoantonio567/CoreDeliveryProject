@@ -89,6 +89,8 @@ export type Database = {
           name: string
           owner_id: string
           quantity: number
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["material_status"]
         }
         Insert: {
           contact_info?: string
@@ -100,6 +102,8 @@ export type Database = {
           name: string
           owner_id: string
           quantity?: number
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["material_status"]
         }
         Update: {
           contact_info?: string
@@ -111,6 +115,8 @@ export type Database = {
           name?: string
           owner_id?: string
           quantity?: number
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["material_status"]
         }
         Relationships: []
       }
@@ -137,6 +143,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      project_requests: {
+        Row: {
+          contact_info: string
+          created_at: string
+          description: string
+          id: string
+          project_id: string
+          quantity: number | null
+          request_type: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          contact_info?: string
+          created_at?: string
+          description: string
+          id?: string
+          project_id: string
+          quantity?: number | null
+          request_type: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          contact_info?: string
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string
+          quantity?: number | null
+          request_type?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
@@ -288,6 +338,7 @@ export type Database = {
         | "completion_requested"
         | "completed"
         | "completion_rejected"
+      material_status: "pending" | "approved" | "rejected" | "disabled"
       project_status: "pending" | "approved" | "rejected" | "disabled"
     }
     CompositeTypes: {
@@ -423,6 +474,7 @@ export const Constants = {
         "completed",
         "completion_rejected",
       ],
+      material_status: ["pending", "approved", "rejected", "disabled"],
       project_status: ["pending", "approved", "rejected", "disabled"],
     },
   },

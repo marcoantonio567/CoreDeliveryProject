@@ -21,6 +21,8 @@ function ProjectDetail() {
   const [reportReason, setReportReason] = useState("");
   const [volunteers, setVolunteers] = useState<any[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [reqForm, setReqForm] = useState({ request_type: "material", description: "", quantity: "", contact_info: "" });
 
   const load = async () => {
     const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
@@ -33,20 +35,22 @@ function ProjectDetail() {
     setVolunteers(v || []);
     const { data: d } = await supabase.from("donations").select("id, description, amount, created_at, user_id").eq("project_id", id).order("created_at", { ascending: false });
     setDonations(d || []);
+    const { data: rq } = await supabase.from("project_requests").select("*").eq("project_id", id).order("created_at", { ascending: false });
+    setRequests(rq || []);
   };
   useEffect(() => { load(); }, [id]);
 
   // resolve names for volunteers/donations
   const [names, setNames] = useState<Record<string, string>>({});
   useEffect(() => {
-    const ids = Array.from(new Set([...volunteers.map(v => v.user_id), ...donations.map(d => d.user_id)].filter(Boolean)));
+    const ids = Array.from(new Set([...volunteers.map(v => v.user_id), ...donations.map(d => d.user_id), ...requests.map(r => r.user_id)].filter(Boolean)));
     if (ids.length === 0) return;
     supabase.from("profiles").select("id, display_name").in("id", ids).then(({ data }) => {
       const map: Record<string, string> = {};
       (data || []).forEach((r: any) => { map[r.id] = r.display_name; });
       setNames(map);
     });
-  }, [volunteers, donations]);
+  }, [volunteers, donations, requests]);
 
   if (!p) return <div className="min-h-screen flex flex-col"><Header /><main className="flex-1 grid place-items-center"><p>Carregando...</p></main></div>;
 
@@ -78,6 +82,20 @@ function ProjectDetail() {
     const { error } = await supabase.from("projects").update({ completion_status: "completion_requested" }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Conclusão solicitada para revisão do administrador.");
+    load();
+  };
+
+  const submitRequest = async () => {
+    if (!user) return toast.error("Faça login.");
+    if (!reqForm.description.trim()) return toast.error("Descreva a necessidade.");
+    const { error } = await supabase.from("project_requests").insert({
+      project_id: id, user_id: user.id, request_type: reqForm.request_type,
+      description: reqForm.description, quantity: reqForm.quantity ? Number(reqForm.quantity) : null,
+      contact_info: reqForm.contact_info,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Solicitação enviada!");
+    setReqForm({ request_type: "material", description: "", quantity: "", contact_info: "" });
     load();
   };
 
@@ -120,6 +138,23 @@ function ProjectDetail() {
           </div>
         </div>
 
+        <div className="mt-10 rounded-xl border border-border bg-card p-5">
+          <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />Solicitar materiais, frete ou registrar intenção de doação</h3>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Tipo</label>
+              <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={reqForm.request_type} onChange={(e) => setReqForm({ ...reqForm, request_type: e.target.value })}>
+                <option value="material">Material</option>
+                <option value="frete">Ajuda de custo / frete</option>
+                <option value="doacao">Intenção de doação</option>
+              </select>
+            </div>
+            <div><label className="text-xs text-muted-foreground">Quantidade (opcional)</label><Input type="number" min={1} value={reqForm.quantity} onChange={(e) => setReqForm({ ...reqForm, quantity: e.target.value })} /></div>
+            <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Descrição da necessidade</label><Textarea rows={3} value={reqForm.description} onChange={(e) => setReqForm({ ...reqForm, description: e.target.value })} /></div>
+            <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Contato (e-mail/telefone)</label><Input value={reqForm.contact_info} onChange={(e) => setReqForm({ ...reqForm, contact_info: e.target.value })} /></div>
+          </div>
+          <Button onClick={submitRequest} className="mt-3" size="sm">Enviar solicitação</Button>
+        </div>
         {user?.id === p.owner_id && (
           <div className="mt-10 grid md:grid-cols-2 gap-4">
             <div className="rounded-xl border border-border bg-card p-5">
@@ -148,6 +183,25 @@ function ProjectDetail() {
                         <p className="text-xs text-muted-foreground mt-1">{new Date(d.created_at).toLocaleString("pt-BR")}</p>
                       </div>
                       {d.amount && <span className="font-semibold text-primary whitespace-nowrap">R$ {Number(d.amount).toFixed(2)}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5 md:col-span-2">
+              <h3 className="font-semibold mb-3">Solicitações recebidas ({requests.length})</h3>
+              {requests.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma solicitação ainda.</p> : (
+                <ul className="space-y-3">
+                  {requests.map((r) => (
+                    <li key={r.id} className="text-sm border-b border-border pb-2 last:border-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium capitalize">{r.request_type === "frete" ? "Ajuda de custo / frete" : r.request_type}</span>
+                        <span className="text-xs rounded-full bg-secondary px-2 py-0.5">{r.status}</span>
+                      </div>
+                      <p className="text-muted-foreground mt-1 whitespace-pre-wrap">{r.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {names[r.user_id] || "Usuário"} {r.quantity ? `· Qtd: ${r.quantity}` : ""} {r.contact_info ? `· ${r.contact_info}` : ""} · {new Date(r.created_at).toLocaleString("pt-BR")}
+                      </p>
                     </li>
                   ))}
                 </ul>
