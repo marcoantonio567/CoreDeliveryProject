@@ -43,14 +43,14 @@ function ProjectDetail() {
   // resolve names for volunteers/donations
   const [names, setNames] = useState<Record<string, string>>({});
   useEffect(() => {
-    const ids = Array.from(new Set([...volunteers.map(v => v.user_id), ...donations.map(d => d.user_id)].filter(Boolean)));
+    const ids = Array.from(new Set([...volunteers.map(v => v.user_id), ...donations.map(d => d.user_id), ...requests.map(r => r.user_id)].filter(Boolean)));
     if (ids.length === 0) return;
     supabase.from("profiles").select("id, display_name").in("id", ids).then(({ data }) => {
       const map: Record<string, string> = {};
       (data || []).forEach((r: any) => { map[r.id] = r.display_name; });
       setNames(map);
     });
-  }, [volunteers, donations]);
+  }, [volunteers, donations, requests]);
 
   if (!p) return <div className="min-h-screen flex flex-col"><Header /><main className="flex-1 grid place-items-center"><p>Carregando...</p></main></div>;
 
