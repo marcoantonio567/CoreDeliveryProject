@@ -138,7 +138,25 @@ function ProjectDetail() {
           </div>
         </div>
 
-        {user?.id === p.owner_id && (
+        <div className="mt-10 rounded-xl border border-border bg-card p-5">
+          <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />Solicitar materiais, frete ou registrar intenção de doação</h3>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Tipo</label>
+              <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={reqForm.request_type} onChange={(e) => setReqForm({ ...reqForm, request_type: e.target.value })}>
+                <option value="material">Material</option>
+                <option value="frete">Ajuda de custo / frete</option>
+                <option value="doacao">Intenção de doação</option>
+              </select>
+            </div>
+            <div><label className="text-xs text-muted-foreground">Quantidade (opcional)</label><Input type="number" min={1} value={reqForm.quantity} onChange={(e) => setReqForm({ ...reqForm, quantity: e.target.value })} /></div>
+            <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Descrição da necessidade</label><Textarea rows={3} value={reqForm.description} onChange={(e) => setReqForm({ ...reqForm, description: e.target.value })} /></div>
+            <div className="md:col-span-2"><label className="text-xs text-muted-foreground">Contato (e-mail/telefone)</label><Input value={reqForm.contact_info} onChange={(e) => setReqForm({ ...reqForm, contact_info: e.target.value })} /></div>
+          </div>
+          <Button onClick={submitRequest} className="mt-3" size="sm">Enviar solicitação</Button>
+        </div>
+
+
           <div className="mt-10 grid md:grid-cols-2 gap-4">
             <div className="rounded-xl border border-border bg-card p-5">
               <h3 className="font-semibold mb-3 inline-flex items-center gap-2"><HandHeart className="h-4 w-4 text-primary" />Voluntários ({volunteers.length})</h3>
