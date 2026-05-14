@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as MyProjectsRouteImport } from './routes/my-projects'
+import { Route as MyMaterialsRouteImport } from './routes/my-materials'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -22,6 +24,8 @@ import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as MaterialsNewRouteImport } from './routes/materials.new'
 import { Route as MaterialsIdRouteImport } from './routes/materials.$id'
+import { Route as ProjectsIdEditRouteImport } from './routes/projects.$id.edit'
+import { Route as MaterialsIdEditRouteImport } from './routes/materials.$id.edit'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -36,6 +40,16 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyProjectsRoute = MyProjectsRouteImport.update({
+  id: '/my-projects',
+  path: '/my-projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyMaterialsRoute = MyMaterialsRouteImport.update({
+  id: '/my-materials',
+  path: '/my-materials',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -88,36 +102,54 @@ const MaterialsIdRoute = MaterialsIdRouteImport.update({
   path: '/materials/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsIdEditRoute = ProjectsIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => ProjectsIdRoute,
+} as any)
+const MaterialsIdEditRoute = MaterialsIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => MaterialsIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-materials': typeof MyMaterialsRoute
+  '/my-projects': typeof MyProjectsRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/materials/$id': typeof MaterialsIdRoute
+  '/materials/$id': typeof MaterialsIdRouteWithChildren
   '/materials/new': typeof MaterialsNewRoute
-  '/projects/$id': typeof ProjectsIdRoute
+  '/projects/$id': typeof ProjectsIdRouteWithChildren
   '/projects/new': typeof ProjectsNewRoute
   '/materials/': typeof MaterialsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/materials/$id/edit': typeof MaterialsIdEditRoute
+  '/projects/$id/edit': typeof ProjectsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-materials': typeof MyMaterialsRoute
+  '/my-projects': typeof MyProjectsRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/materials/$id': typeof MaterialsIdRoute
+  '/materials/$id': typeof MaterialsIdRouteWithChildren
   '/materials/new': typeof MaterialsNewRoute
-  '/projects/$id': typeof ProjectsIdRoute
+  '/projects/$id': typeof ProjectsIdRouteWithChildren
   '/projects/new': typeof ProjectsNewRoute
   '/materials': typeof MaterialsIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/materials/$id/edit': typeof MaterialsIdEditRoute
+  '/projects/$id/edit': typeof ProjectsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,15 +157,19 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/my-materials': typeof MyMaterialsRoute
+  '/my-projects': typeof MyProjectsRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/materials/$id': typeof MaterialsIdRoute
+  '/materials/$id': typeof MaterialsIdRouteWithChildren
   '/materials/new': typeof MaterialsNewRoute
-  '/projects/$id': typeof ProjectsIdRoute
+  '/projects/$id': typeof ProjectsIdRouteWithChildren
   '/projects/new': typeof ProjectsNewRoute
   '/materials/': typeof MaterialsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/materials/$id/edit': typeof MaterialsIdEditRoute
+  '/projects/$id/edit': typeof ProjectsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -142,6 +178,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/forgot-password'
     | '/login'
+    | '/my-materials'
+    | '/my-projects'
     | '/profile'
     | '/reset-password'
     | '/signup'
@@ -151,12 +189,16 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/materials/'
     | '/projects/'
+    | '/materials/$id/edit'
+    | '/projects/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
     | '/forgot-password'
     | '/login'
+    | '/my-materials'
+    | '/my-projects'
     | '/profile'
     | '/reset-password'
     | '/signup'
@@ -166,12 +208,16 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/materials'
     | '/projects'
+    | '/materials/$id/edit'
+    | '/projects/$id/edit'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/forgot-password'
     | '/login'
+    | '/my-materials'
+    | '/my-projects'
     | '/profile'
     | '/reset-password'
     | '/signup'
@@ -181,6 +227,8 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/materials/'
     | '/projects/'
+    | '/materials/$id/edit'
+    | '/projects/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -188,12 +236,14 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  MyMaterialsRoute: typeof MyMaterialsRoute
+  MyProjectsRoute: typeof MyProjectsRoute
   ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
-  MaterialsIdRoute: typeof MaterialsIdRoute
+  MaterialsIdRoute: typeof MaterialsIdRouteWithChildren
   MaterialsNewRoute: typeof MaterialsNewRoute
-  ProjectsIdRoute: typeof ProjectsIdRoute
+  ProjectsIdRoute: typeof ProjectsIdRouteWithChildren
   ProjectsNewRoute: typeof ProjectsNewRoute
   MaterialsIndexRoute: typeof MaterialsIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -220,6 +270,20 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-projects': {
+      id: '/my-projects'
+      path: '/my-projects'
+      fullPath: '/my-projects'
+      preLoaderRoute: typeof MyProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-materials': {
+      id: '/my-materials'
+      path: '/my-materials'
+      fullPath: '/my-materials'
+      preLoaderRoute: typeof MyMaterialsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -292,20 +356,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MaterialsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$id/edit': {
+      id: '/projects/$id/edit'
+      path: '/edit'
+      fullPath: '/projects/$id/edit'
+      preLoaderRoute: typeof ProjectsIdEditRouteImport
+      parentRoute: typeof ProjectsIdRoute
+    }
+    '/materials/$id/edit': {
+      id: '/materials/$id/edit'
+      path: '/edit'
+      fullPath: '/materials/$id/edit'
+      preLoaderRoute: typeof MaterialsIdEditRouteImport
+      parentRoute: typeof MaterialsIdRoute
+    }
   }
 }
+
+interface MaterialsIdRouteChildren {
+  MaterialsIdEditRoute: typeof MaterialsIdEditRoute
+}
+
+const MaterialsIdRouteChildren: MaterialsIdRouteChildren = {
+  MaterialsIdEditRoute: MaterialsIdEditRoute,
+}
+
+const MaterialsIdRouteWithChildren = MaterialsIdRoute._addFileChildren(
+  MaterialsIdRouteChildren,
+)
+
+interface ProjectsIdRouteChildren {
+  ProjectsIdEditRoute: typeof ProjectsIdEditRoute
+}
+
+const ProjectsIdRouteChildren: ProjectsIdRouteChildren = {
+  ProjectsIdEditRoute: ProjectsIdEditRoute,
+}
+
+const ProjectsIdRouteWithChildren = ProjectsIdRoute._addFileChildren(
+  ProjectsIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  MyMaterialsRoute: MyMaterialsRoute,
+  MyProjectsRoute: MyProjectsRoute,
   ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
-  MaterialsIdRoute: MaterialsIdRoute,
+  MaterialsIdRoute: MaterialsIdRouteWithChildren,
   MaterialsNewRoute: MaterialsNewRoute,
-  ProjectsIdRoute: ProjectsIdRoute,
+  ProjectsIdRoute: ProjectsIdRouteWithChildren,
   ProjectsNewRoute: ProjectsNewRoute,
   MaterialsIndexRoute: MaterialsIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,

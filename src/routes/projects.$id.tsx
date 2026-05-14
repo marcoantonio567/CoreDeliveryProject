@@ -21,6 +21,8 @@ function ProjectDetail() {
   const [reportReason, setReportReason] = useState("");
   const [volunteers, setVolunteers] = useState<any[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [reqForm, setReqForm] = useState({ request_type: "material", description: "", quantity: "", contact_info: "" });
 
   const load = async () => {
     const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
@@ -33,6 +35,8 @@ function ProjectDetail() {
     setVolunteers(v || []);
     const { data: d } = await supabase.from("donations").select("id, description, amount, created_at, user_id").eq("project_id", id).order("created_at", { ascending: false });
     setDonations(d || []);
+    const { data: rq } = await supabase.from("project_requests").select("*").eq("project_id", id).order("created_at", { ascending: false });
+    setRequests(rq || []);
   };
   useEffect(() => { load(); }, [id]);
 
@@ -78,6 +82,20 @@ function ProjectDetail() {
     const { error } = await supabase.from("projects").update({ completion_status: "completion_requested" }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Conclusão solicitada para revisão do administrador.");
+    load();
+  };
+
+  const submitRequest = async () => {
+    if (!user) return toast.error("Faça login.");
+    if (!reqForm.description.trim()) return toast.error("Descreva a necessidade.");
+    const { error } = await supabase.from("project_requests").insert({
+      project_id: id, user_id: user.id, request_type: reqForm.request_type,
+      description: reqForm.description, quantity: reqForm.quantity ? Number(reqForm.quantity) : null,
+      contact_info: reqForm.contact_info,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Solicitação enviada!");
+    setReqForm({ request_type: "material", description: "", quantity: "", contact_info: "" });
     load();
   };
 
