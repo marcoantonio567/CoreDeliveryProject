@@ -78,6 +78,42 @@ export type Database = {
           },
         ]
       }
+      material_requests: {
+        Row: {
+          address: string
+          contact_info: string
+          created_at: string
+          description: string
+          id: string
+          material_id: string
+          needs_freight: boolean
+          quantity: number | null
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          contact_info?: string
+          created_at?: string
+          description: string
+          id?: string
+          material_id: string
+          needs_freight?: boolean
+          quantity?: number | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          contact_info?: string
+          created_at?: string
+          description?: string
+          id?: string
+          material_id?: string
+          needs_freight?: boolean
+          quantity?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           contact_info: string
