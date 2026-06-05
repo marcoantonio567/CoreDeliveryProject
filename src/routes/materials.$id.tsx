@@ -28,7 +28,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info, Pencil, Trash2 } from "lucide-react";
+import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info, Pencil, Trash2, X } from "lucide-react";
+import { uploadImages } from "@/lib/upload";
 
 export const Route = createFileRoute("/materials/$id")({ component: MaterialDetail });
 
@@ -41,6 +42,7 @@ function MaterialDetail() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [editFiles, setEditFiles] = useState<File[]>([]);
   const [editLoading, setEditLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -61,6 +63,7 @@ function MaterialDetail() {
     contact_email: "",
     condition: "Novo",
     unit: "Unidade",
+    images: [] as string[],
   });
 
   const loadMaterial = () =>
@@ -81,6 +84,7 @@ function MaterialDetail() {
             contact_email: data.contact_email || "",
             condition: data.condition || "Novo",
             unit: data.unit || "Unidade",
+            images: data.images || [],
           });
         }
       });
@@ -205,6 +209,10 @@ function MaterialDetail() {
     setIsConfirmOpen(true);
   };
 
+  const removeEditImage = (url: string) => {
+    setEditForm({ ...editForm, images: (editForm.images || []).filter((u: string) => u !== url) });
+  };
+
   const saveMaterial = async () => {
     if (!editForm.name || !editForm.description || !editForm.location) {
       return toast.error("Preencha os campos obrigatórios.");
@@ -212,8 +220,20 @@ function MaterialDetail() {
     if (!editForm.contact_phone && !editForm.contact_email) {
       return toast.error("Informe pelo menos um meio de contato (Telefone ou E-mail).");
     }
+
     setEditLoading(true);
     try {
+      let images = [...(editForm.images || [])];
+      if (editFiles.length > 0) {
+        const newImages = await uploadImages(user!.id, editFiles);
+        images = [...images, ...newImages];
+      }
+
+      if (images.length === 0) {
+        setEditLoading(false);
+        return toast.error("O material deve ter pelo menos uma imagem.");
+      }
+
       const { error } = await supabase
         .from("materials")
         .update({
@@ -226,11 +246,13 @@ function MaterialDetail() {
           contact_info: editForm.contact_phone || editForm.contact_email, // Compatibility
           condition: editForm.condition,
           unit: editForm.unit,
+          images: images,
         })
         .eq("id", id);
       if (error) throw error;
       toast.success("Material atualizado!");
       setIsEditOpen(false);
+      setEditFiles([]);
       loadMaterial();
     } catch (err: any) {
       toast.error(err.message);
@@ -351,12 +373,41 @@ function MaterialDetail() {
                       <div className="space-y-2">
                         <Label htmlFor="edit-desc">Descrição *</Label>
                         <Textarea
-                          id="edit-desc"
-                          rows={4}
-                          value={editForm.description}
-                          onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                        />
+                            id="edit-desc"
+                            rows={4}
+                            value={editForm.description}
+                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                          />
+                        </div>
+
+                      <div className="space-y-4 pt-4 border-t">
+                        <Label>Imagens do Material *</Label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {editForm?.images?.map((u: string) => (
+                            <div key={u} className="relative group aspect-square">
+                              <img src={u} alt="" className="w-full h-full object-cover rounded-md border" />
+                              <button
+                                type="button"
+                                onClick={() => removeEditImage(u)}
+                                className="absolute -top-1 -right-1 bg-destructive text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-files" className="text-xs text-muted-foreground">Adicionar novas imagens</Label>
+                          <Input
+                            id="edit-files"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => setEditFiles(Array.from(e.target.files || []))}
+                          />
+                        </div>
                       </div>
+
                       <div className="space-y-4 pt-4 border-t">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Meios de Contato (Informe pelo menos um)</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

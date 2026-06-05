@@ -52,8 +52,10 @@ import {
   TrendingUp,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { uploadImages } from "@/lib/upload";
 
 function tlv(tag: string, value: string) {
   return `${tag}${value.length.toString().padStart(2, "0")}${value}`;
@@ -109,6 +111,8 @@ function ProjectDetail() {
   const [isDeleteNeedOpen, setIsDeleteNeedOpen] = useState(false);
 
   const [editForm, setEditForm] = useState<any>(null);
+  const [editFiles, setEditFiles] = useState<File[]>([]);
+  const [editLoading, setEditLoading] = useState(false);
   const [volunteerForm, setVolunteerForm] = useState({
     message: "",
     contact_phone: "",
@@ -162,6 +166,7 @@ function ProjectDetail() {
           beneficiary_income: data.beneficiary_income || "Até 1 salário mínimo",
           beneficiary_situation: data.beneficiary_situation || "",
           beneficiary_vulnerability: data.beneficiary_vulnerability || "",
+          images: data.images || [],
         });
       }
       if (data?.owner_id) {
@@ -332,41 +337,60 @@ function ProjectDetail() {
     setReportReason("");
   };
 
+  const removeEditImage = (url: string) => {
+    setEditForm({ ...editForm, images: (editForm.images || []).filter((u: string) => u !== url) });
+  };
+
   const saveProject = async () => {
     if (!editForm.name || !editForm.description || !editForm.location || !editForm.beneficiary_name || !editForm.beneficiary_situation || !editForm.beneficiary_vulnerability || !editForm.estimated_cost || !editForm.financial_goal || !editForm.start_date || !editForm.end_date) {
       return toast.error("Por favor, preencha todos os campos obrigatórios marcados com *");
     }
     
-    // Check for images
-    if ((p.images || []).length === 0) {
-      return toast.error("O projeto deve ter pelo menos uma imagem.");
+    setEditLoading(true);
+    try {
+      let images = [...(editForm.images || [])];
+      if (editFiles.length > 0) {
+        const newImages = await uploadImages(user!.id, editFiles);
+        images = [...images, ...newImages];
+      }
+
+      if (images.length === 0) {
+        setEditLoading(false);
+        return toast.error("O projeto deve ter pelo menos uma imagem.");
+      }
+
+      const { error } = await supabase
+        .from("projects")
+        .update({
+          name: editForm.name,
+          description: editForm.description,
+          improvement_type: editForm.improvement_type,
+          location: editForm.location,
+          urgency: editForm.urgency,
+          financial_goal: Number(editForm.financial_goal),
+          estimated_cost: Number(editForm.estimated_cost),
+          start_date: editForm.start_date || null,
+          end_date: editForm.end_date || null,
+          beneficiary_name: editForm.beneficiary_name,
+          beneficiary_residents: Number(editForm.beneficiary_residents),
+          beneficiary_children: Number(editForm.beneficiary_children),
+          beneficiary_income: editForm.beneficiary_income,
+          beneficiary_situation: editForm.beneficiary_situation,
+          beneficiary_vulnerability: editForm.beneficiary_vulnerability,
+          images: images,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success("Projeto atualizado!");
+      setIsEditOpen(false);
+      setEditFiles([]);
+      load(true);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setEditLoading(false);
     }
-
-    const { error } = await supabase
-      .from("projects")
-      .update({
-        name: editForm.name,
-        description: editForm.description,
-        improvement_type: editForm.improvement_type,
-        location: editForm.location,
-        urgency: editForm.urgency,
-        financial_goal: Number(editForm.financial_goal),
-        estimated_cost: Number(editForm.estimated_cost),
-        start_date: editForm.start_date || null,
-        end_date: editForm.end_date || null,
-        beneficiary_name: editForm.beneficiary_name,
-        beneficiary_residents: Number(editForm.beneficiary_residents),
-        beneficiary_children: Number(editForm.beneficiary_children),
-        beneficiary_income: editForm.beneficiary_income,
-        beneficiary_situation: editForm.beneficiary_situation,
-        beneficiary_vulnerability: editForm.beneficiary_vulnerability,
-      })
-      .eq("id", id);
-
-    if (error) return toast.error(error.message);
-    toast.success("Projeto atualizado!");
-    setIsEditOpen(false);
-    load(true);
   };
 
   const requestCompletion = async () => {
@@ -664,6 +688,33 @@ function ProjectDetail() {
                               value={editForm?.location}
                               onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
                             />
+                          </div>
+                          <div className="space-y-4 pt-4 border-t">
+                            <Label>Imagens do Projeto *</Label>
+                            <div className="grid grid-cols-4 gap-2">
+                              {editForm?.images?.map((u: string) => (
+                                <div key={u} className="relative group aspect-square">
+                                  <img src={u} alt="" className="w-full h-full object-cover rounded-md border" />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeEditImage(u)}
+                                    className="absolute -top-1 -right-1 bg-destructive text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-files" className="text-xs text-muted-foreground">Adicionar novas imagens</Label>
+                              <Input
+                                id="edit-files"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => setEditFiles(Array.from(e.target.files || []))}
+                              />
+                            </div>
                           </div>
                         </TabsContent>
 
