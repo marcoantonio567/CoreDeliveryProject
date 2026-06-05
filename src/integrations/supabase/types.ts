@@ -78,6 +78,42 @@ export type Database = {
           },
         ]
       }
+      material_requests: {
+        Row: {
+          address: string
+          contact_info: string
+          created_at: string
+          description: string
+          id: string
+          material_id: string
+          needs_freight: boolean
+          quantity: number | null
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          contact_info?: string
+          created_at?: string
+          description: string
+          id?: string
+          material_id: string
+          needs_freight?: boolean
+          quantity?: number | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          contact_info?: string
+          created_at?: string
+          description?: string
+          id?: string
+          material_id?: string
+          needs_freight?: boolean
+          quantity?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           contact_info: string
@@ -122,24 +158,57 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address_city: string | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
           avatar_url: string | null
+          birth_date: string | null
           created_at: string
           display_name: string
           id: string
+          phone: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           updated_at: string
         }
         Insert: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           display_name?: string
           id: string
+          phone?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           updated_at?: string
         }
         Update: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           display_name?: string
           id?: string
+          phone?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           updated_at?: string
         }
         Relationships: []
