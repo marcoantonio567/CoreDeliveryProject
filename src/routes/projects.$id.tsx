@@ -9,6 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import {
@@ -23,6 +32,7 @@ import {
   History,
   Info,
   MapPin,
+  Pencil,
   Plus,
   QrCode,
   Sparkles,
@@ -77,6 +87,12 @@ function ProjectDetail() {
   const { user, isAdmin } = useAuth();
   const [p, setP] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isNeedOpen, setIsNeedOpen] = useState(false);
+  const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+
+  const [editForm, setEditForm] = useState<any>(null);
   const [volunteerMsg, setVolunteerMsg] = useState("");
   const [donationDesc, setDonationDesc] = useState("");
   const [donationAmt, setDonationAmt] = useState("");
@@ -105,6 +121,25 @@ function ProjectDetail() {
     try {
       const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
       setP(data);
+      if (data) {
+        setEditForm({
+          name: data.name || "",
+          description: data.description || "",
+          improvement_type: data.improvement_type || "Telhado",
+          location: data.location || "",
+          urgency: data.urgency || "Média",
+          financial_goal: data.financial_goal || 0,
+          estimated_cost: data.estimated_cost || 0,
+          start_date: data.start_date || "",
+          end_date: data.end_date || "",
+          beneficiary_name: data.beneficiary_name || "",
+          beneficiary_residents: data.beneficiary_residents || 0,
+          beneficiary_children: data.beneficiary_children || 0,
+          beneficiary_income: data.beneficiary_income || "Até 1 salário mínimo",
+          beneficiary_situation: data.beneficiary_situation || "",
+          beneficiary_vulnerability: data.beneficiary_vulnerability || "",
+        });
+      }
       if (data?.owner_id) {
         supabase
           .from("profiles")
@@ -237,6 +272,35 @@ function ProjectDetail() {
     setReportReason("");
   };
 
+  const saveProject = async () => {
+    if (!editForm.name || !editForm.description) return toast.error("Preencha os campos obrigatórios.");
+    const { error } = await supabase
+      .from("projects")
+      .update({
+        name: editForm.name,
+        description: editForm.description,
+        improvement_type: editForm.improvement_type,
+        location: editForm.location,
+        urgency: editForm.urgency,
+        financial_goal: Number(editForm.financial_goal),
+        estimated_cost: Number(editForm.estimated_cost),
+        start_date: editForm.start_date || null,
+        end_date: editForm.end_date || null,
+        beneficiary_name: editForm.beneficiary_name,
+        beneficiary_residents: Number(editForm.beneficiary_residents),
+        beneficiary_children: Number(editForm.beneficiary_children),
+        beneficiary_income: editForm.beneficiary_income,
+        beneficiary_situation: editForm.beneficiary_situation,
+        beneficiary_vulnerability: editForm.beneficiary_vulnerability,
+      })
+      .eq("id", id);
+
+    if (error) return toast.error(error.message);
+    toast.success("Projeto atualizado!");
+    setIsEditOpen(false);
+    load();
+  };
+
   const requestCompletion = async () => {
     const { error } = await supabase
       .from("projects")
@@ -275,6 +339,7 @@ function ProjectDetail() {
     if (error) return toast.error(error.message);
     toast.success("Necessidade adicionada!");
     setNewNeed({ type: "Material", description: "", quantity_needed: "" });
+    setIsNeedOpen(false);
     load();
   };
 
@@ -297,6 +362,7 @@ function ProjectDetail() {
     if (error) return toast.error(error.message);
     toast.success("Atualização publicada!");
     setNewUpdate({ description: "" });
+    setIsUpdateOpen(false);
     load();
   };
 
@@ -315,6 +381,7 @@ function ProjectDetail() {
       amount: "",
       date: new Date().toISOString().split("T")[0],
     });
+    setIsExpenseOpen(false);
     load();
   };
 
@@ -418,11 +485,196 @@ function ProjectDetail() {
 
             <div className="mt-8 flex flex-wrap gap-3">
               {user?.id === p.owner_id || isAdmin ? (
-                <Button asChild variant="outline" className="flex-1">
-                  <Link to="/projects/$id/edit" params={{ id }}>
-                    Editar Projeto
-                  </Link>
-                </Button>
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="flex-1 gap-2">
+                      <Pencil className="h-4 w-4" /> Editar Projeto
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Editar Projeto</DialogTitle>
+                      <DialogDescription>
+                        Atualize as informações básicas e detalhes do projeto.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-6 py-4">
+                      <Tabs defaultValue="basic" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="basic">Básico</TabsTrigger>
+                          <TabsTrigger value="beneficiary">Beneficiário</TabsTrigger>
+                          <TabsTrigger value="planning">Planejamento</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="basic" className="space-y-4 pt-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="name">Nome do Projeto</Label>
+                            <Input
+                              id="name"
+                              value={editForm?.name}
+                              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="desc">Descrição</Label>
+                            <Textarea
+                              id="desc"
+                              rows={4}
+                              value={editForm?.description}
+                              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Tipo de melhoria</Label>
+                              <select
+                                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                value={editForm?.improvement_type}
+                                onChange={(e) => setEditForm({ ...editForm, improvement_type: e.target.value })}
+                              >
+                                {["Telhado", "Banheiro", "Estrutura", "Cozinha", "Hidráulica", "Elétrica", "Outro"].map((o) => (
+                                  <option key={o}>{o}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Urgência</Label>
+                              <select
+                                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                value={editForm?.urgency}
+                                onChange={(e) => setEditForm({ ...editForm, urgency: e.target.value })}
+                              >
+                                {["Baixa", "Média", "Alta", "Emergencial"].map((o) => (
+                                  <option key={o}>{o}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="loc">Localização</Label>
+                            <Input
+                              id="loc"
+                              value={editForm?.location}
+                              onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                            />
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="beneficiary" className="space-y-4 pt-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="b_name">Nome do Beneficiário</Label>
+                            <Input
+                              id="b_name"
+                              value={editForm?.beneficiary_name}
+                              onChange={(e) => setEditForm({ ...editForm, beneficiary_name: e.target.value })}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="residents">Moradores</Label>
+                              <Input
+                                id="residents"
+                                type="number"
+                                value={editForm?.beneficiary_residents}
+                                onChange={(e) => setEditForm({ ...editForm, beneficiary_residents: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="children">Crianças</Label>
+                              <Input
+                                id="children"
+                                type="number"
+                                value={editForm?.beneficiary_children}
+                                onChange={(e) => setEditForm({ ...editForm, beneficiary_children: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Renda Familiar</Label>
+                            <select
+                              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                              value={editForm?.beneficiary_income}
+                              onChange={(e) => setEditForm({ ...editForm, beneficiary_income: e.target.value })}
+                            >
+                              {[
+                                "Até 1 salário mínimo",
+                                "1 a 2 salários mínimos",
+                                "2 a 3 salários mínimos",
+                                "Mais de 3 salários mínimos",
+                                "Sem renda",
+                              ].map((o) => (
+                                <option key={o}>{o}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="vulnerability">Vulnerabilidade</Label>
+                            <Input
+                              id="vulnerability"
+                              value={editForm?.beneficiary_vulnerability}
+                              onChange={(e) => setEditForm({ ...editForm, beneficiary_vulnerability: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="situation">Situação Habitacional</Label>
+                            <Textarea
+                              id="situation"
+                              value={editForm?.beneficiary_situation}
+                              onChange={(e) => setEditForm({ ...editForm, beneficiary_situation: e.target.value })}
+                            />
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="planning" className="space-y-4 pt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="est_cost">Custo Estimado (R$)</Label>
+                              <Input
+                                id="est_cost"
+                                type="number"
+                                value={editForm?.estimated_cost}
+                                onChange={(e) => setEditForm({ ...editForm, estimated_cost: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="fin_goal">Meta Financeira (R$)</Label>
+                              <Input
+                                id="fin_goal"
+                                type="number"
+                                value={editForm?.financial_goal}
+                                onChange={(e) => setEditForm({ ...editForm, financial_goal: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="start">Data de Início</Label>
+                              <Input
+                                id="start"
+                                type="date"
+                                value={editForm?.start_date}
+                                onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="end">Previsão de Término</Label>
+                              <Input
+                                id="end"
+                                type="date"
+                                value={editForm?.end_date}
+                                onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
+                      <Button onClick={saveProject}>Salvar Alterações</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               ) : (
                 <>
                   <Button className="flex-1 gap-2" onClick={() => document.getElementById("interaction-tabs")?.scrollIntoView({ behavior: "smooth" })}>
@@ -704,100 +956,133 @@ function ProjectDetail() {
 
               {user?.id === p.owner_id && (
                 <TabsContent value="management" className="space-y-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-bold">Painel de Gestão do Proprietário</h3>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="rounded-xl border border-border p-5 bg-card space-y-4">
-                        <h4 className="font-bold flex items-center gap-2">
-                          <Plus className="h-4 w-4" /> Adicionar Necessidade
-                        </h4>
-                        <div className="space-y-3">
-                          <div>
-                            <Label className="text-xs">Tipo</Label>
-                            <select
-                              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                              value={newNeed.type}
-                              onChange={(e) => setNewNeed({ ...newNeed, type: e.target.value })}
-                            >
-                              {NEED_TYPES.map((t) => (
-                                <option key={t}>{t}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <Label className="text-xs">Descrição</Label>
-                            <Input
-                              value={newNeed.description}
-                              onChange={(e) => setNewNeed({ ...newNeed, description: e.target.value })}
-                              placeholder="Ex: 50 sacos de cimento"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Quantidade total necessária</Label>
-                            <Input
-                              type="number"
-                              value={newNeed.quantity_needed}
-                              onChange={(e) => setNewNeed({ ...newNeed, quantity_needed: e.target.value })}
-                            />
-                          </div>
-                          <Button onClick={addNeed} size="sm" className="w-full">
-                            Cadastrar Necessidade
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-border p-5 bg-card space-y-4">
-                        <h4 className="font-bold flex items-center gap-2">
-                          <History className="h-4 w-4" /> Publicar Atualização
-                        </h4>
-                        <div className="space-y-3">
-                          <Textarea
-                            placeholder="Descreva o que aconteceu no projeto hoje..."
-                            rows={5}
-                            value={newUpdate.description}
-                            onChange={(e) => setNewUpdate({ description: e.target.value })}
-                          />
-                          <Button onClick={addUpdate} size="sm" className="w-full">
-                            Publicar na Timeline
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-border p-5 bg-card space-y-4 sm:col-span-2">
-                        <h4 className="font-bold flex items-center gap-2">
-                          <Wallet className="h-4 w-4" /> Registrar Gasto / Prestação de Contas
-                        </h4>
-                        <div className="grid sm:grid-cols-3 gap-4">
-                          <div>
-                            <Label className="text-xs">Data</Label>
-                            <Input
-                              type="date"
-                              value={newExpense.date}
-                              onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                            />
-                          </div>
-                          <div className="sm:col-span-2">
-                            <Label className="text-xs">Descrição do gasto</Label>
-                            <Input
-                              placeholder="Ex: Compra de materiais na loja X"
-                              value={newExpense.description}
-                              onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Valor (R$)</Label>
-                            <Input
-                              type="number"
-                              value={newExpense.amount}
-                              onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                            />
-                          </div>
-                          <div className="sm:col-span-2 flex items-end">
-                            <Button onClick={addExpense} size="sm" className="w-full">
-                              Salvar Gasto
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <h3 className="text-xl font-bold">Painel de Gestão do Proprietário</h3>
+                      <div className="flex flex-wrap gap-2">
+                        <Dialog open={isNeedOpen} onOpenChange={setIsNeedOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" className="gap-2">
+                              <Plus className="h-4 w-4" /> Nova Necessidade
                             </Button>
-                          </div>
-                        </div>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Adicionar Necessidade</DialogTitle>
+                              <DialogDescription>
+                                Especifique o que o projeto precisa no momento.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label>Tipo</Label>
+                                <select
+                                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                  value={newNeed.type}
+                                  onChange={(e) => setNewNeed({ ...newNeed, type: e.target.value })}
+                                >
+                                  {NEED_TYPES.map((t) => (
+                                    <option key={t}>{t}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Descrição</Label>
+                                <Input
+                                  value={newNeed.description}
+                                  onChange={(e) => setNewNeed({ ...newNeed, description: e.target.value })}
+                                  placeholder="Ex: 50 sacos de cimento"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Quantidade total necessária</Label>
+                                <Input
+                                  type="number"
+                                  value={newNeed.quantity_needed}
+                                  onChange={(e) => setNewNeed({ ...newNeed, quantity_needed: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setIsNeedOpen(false)}>Cancelar</Button>
+                              <Button onClick={addNeed}>Cadastrar</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="gap-2">
+                              <History className="h-4 w-4" /> Nova Atualização
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Publicar Atualização</DialogTitle>
+                              <DialogDescription>
+                                Mantenha os apoiadores informados sobre o progresso.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <Textarea
+                                placeholder="Descreva o que aconteceu no projeto hoje..."
+                                rows={5}
+                                value={newUpdate.description}
+                                onChange={(e) => setNewUpdate({ description: e.target.value })}
+                              />
+                            </div>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setIsUpdateOpen(false)}>Cancelar</Button>
+                              <Button onClick={addUpdate}>Publicar</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog open={isExpenseOpen} onOpenChange={setIsExpenseOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="secondary" className="gap-2">
+                              <Wallet className="h-4 w-4" /> Registrar Gasto
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Registrar Gasto / Prestação de Contas</DialogTitle>
+                              <DialogDescription>
+                                Registre como os recursos estão sendo utilizados.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label>Data</Label>
+                                <Input
+                                  type="date"
+                                  value={newExpense.date}
+                                  onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Descrição do gasto</Label>
+                                <Input
+                                  placeholder="Ex: Compra de materiais na loja X"
+                                  value={newExpense.description}
+                                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Valor (R$)</Label>
+                                <Input
+                                  type="number"
+                                  value={newExpense.amount}
+                                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setIsExpenseOpen(false)}>Cancelar</Button>
+                              <Button onClick={addExpense}>Salvar Gasto</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </div>
                   </div>
