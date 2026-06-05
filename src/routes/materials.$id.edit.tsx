@@ -113,9 +113,12 @@ function EditMaterial() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let images = form.images || [];
+    if (images.length === 0 && files.length === 0) {
+      return toast.error("O material deve ter pelo menos uma imagem.");
+    }
     setLoading(true);
     try {
-      let images = form.images || [];
       if (files.length) images = [...images, ...(await uploadImages(user.id, files))];
       const { error } = await supabase
         .from("materials")
@@ -241,7 +244,7 @@ function EditMaterial() {
           </div>
 
           <div className="space-y-4">
-            <Label>Imagens atuais</Label>
+            <Label>Imagens atuais *</Label>
             {form.images?.length > 0 ? (
               <div className="grid grid-cols-3 gap-3">
                 {form.images.map((u: string) => (

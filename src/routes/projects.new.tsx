@@ -53,6 +53,9 @@ function NewProject() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (files.length === 0) {
+      return toast.error("Por favor, adicione pelo menos uma imagem do local.");
+    }
     setLoading(true);
     try {
       const images = files.length ? await uploadImages(user.id, files) : [];
@@ -159,15 +162,16 @@ function NewProject() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Imagens do local atual</Label>
+                <Label>Imagens do local atual *</Label>
                 <Input
                   type="file"
                   accept="image/*"
                   multiple
+                  required
                   onChange={(e) => setFiles(Array.from(e.target.files || []))}
                 />
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> Selecione fotos que mostrem a necessidade da reforma.
+                  <AlertCircle className="h-3 w-3" /> Selecione fotos que mostrem a necessidade da reforma. (Obrigatório)
                 </p>
               </div>
             </TabsContent>

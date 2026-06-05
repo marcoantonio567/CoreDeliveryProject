@@ -336,6 +336,12 @@ function ProjectDetail() {
     if (!editForm.name || !editForm.description || !editForm.location || !editForm.beneficiary_name || !editForm.beneficiary_situation || !editForm.beneficiary_vulnerability || !editForm.estimated_cost || !editForm.financial_goal || !editForm.start_date || !editForm.end_date) {
       return toast.error("Por favor, preencha todos os campos obrigatórios marcados com *");
     }
+    
+    // Check for images
+    if ((p.images || []).length === 0) {
+      return toast.error("O projeto deve ter pelo menos uma imagem.");
+    }
+
     const { error } = await supabase
       .from("projects")
       .update({
@@ -1323,7 +1329,7 @@ function ProjectDetail() {
                             className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => {
                               const myReq = volunteers.find((v) => v.user_id === user?.id);
-                              if (myReq) cancelRequest(myReq.id);
+                              if (myReq) updateVolunteerStatus(myReq.id, "Recusada");
                             }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" /> Cancelar Candidatura

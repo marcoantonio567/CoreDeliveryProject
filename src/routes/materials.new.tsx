@@ -54,6 +54,9 @@ function NewMaterial() {
     if (!form.contact_phone && !form.contact_email) {
       return toast.error("Informe pelo menos um meio de contato (Telefone ou E-mail).");
     }
+    if (files.length === 0) {
+      return toast.error("Por favor, adicione pelo menos uma imagem do material.");
+    }
     setLoading(true);
     try {
       const images = files.length ? await uploadImages(user.id, files) : [];
@@ -187,11 +190,12 @@ function NewMaterial() {
           </div>
 
           <div className="space-y-2">
-            <Label>Imagens do material</Label>
+            <Label>Imagens do material *</Label>
             <Input
               type="file"
               accept="image/*"
               multiple
+              required
               onChange={(e) => setFiles(Array.from(e.target.files || []))}
             />
           </div>
