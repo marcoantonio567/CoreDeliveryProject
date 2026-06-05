@@ -174,16 +174,17 @@ function NewProject() {
 
             <TabsContent value="beneficiary" className="space-y-4 mt-6 rounded-xl border border-border bg-card p-6">
               <div className="space-y-2">
-                <Label htmlFor="b-name">Nome do responsável pela residência</Label>
+                <Label htmlFor="b-name">Nome do responsável pela residência *</Label>
                 <Input
                   id="b-name"
+                  required
                   value={form.beneficiary_name}
                   onChange={(e) => setForm({ ...form, beneficiary_name: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="b-res">Total de moradores</Label>
+                  <Label htmlFor="b-res">Total de moradores (opcional)</Label>
                   <Input
                     id="b-res"
                     type="number"
@@ -193,7 +194,7 @@ function NewProject() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="b-kids">Quantidade de crianças</Label>
+                  <Label htmlFor="b-kids">Quantidade de crianças (opcional)</Label>
                   <Input
                     id="b-kids"
                     type="number"
@@ -204,21 +205,23 @@ function NewProject() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Faixa de renda familiar</Label>
+                <Label>Faixa de renda familiar (opcional)</Label>
                 <select
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary outline-none"
                   value={form.beneficiary_income}
                   onChange={(e) => setForm({ ...form, beneficiary_income: e.target.value })}
                 >
+                  <option value="">Não informado</option>
                   {INCOME_OPTIONS.map((o) => (
                     <option key={o}>{o}</option>
                   ))}
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="b-sit">Relato da situação habitacional</Label>
+                <Label htmlFor="b-sit">Relato da situação habitacional *</Label>
                 <Textarea
                   id="b-sit"
+                  required
                   rows={3}
                   value={form.beneficiary_situation}
                   onChange={(e) => setForm({ ...form, beneficiary_situation: e.target.value })}
@@ -226,9 +229,10 @@ function NewProject() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="b-vul">Nível de vulnerabilidade social</Label>
+                <Label htmlFor="b-vul">Nível de vulnerabilidade social *</Label>
                 <Input
                   id="b-vul"
+                  required
                   value={form.beneficiary_vulnerability}
                   onChange={(e) => setForm({ ...form, beneficiary_vulnerability: e.target.value })}
                   placeholder="Ex: Família em situação de risco, falta de saneamento..."
@@ -239,20 +243,22 @@ function NewProject() {
             <TabsContent value="planning" className="space-y-4 mt-6 rounded-xl border border-border bg-card p-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cost">Valor estimado da obra (R$)</Label>
+                  <Label htmlFor="cost">Valor estimado da obra (R$) *</Label>
                   <Input
                     id="cost"
                     type="number"
+                    required
                     min={0}
                     value={form.estimated_cost}
                     onChange={(e) => setForm({ ...form, estimated_cost: Number(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="goal">Meta de arrecadação (R$)</Label>
+                  <Label htmlFor="goal">Meta de arrecadação financeira (R$) *</Label>
                   <Input
                     id="goal"
                     type="number"
+                    required
                     min={0}
                     value={form.financial_goal}
                     onChange={(e) => setForm({ ...form, financial_goal: Number(e.target.value) })}
@@ -262,22 +268,24 @@ function NewProject() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start" className="flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" /> Previsão de Início
+                    <Calendar className="h-4 w-4" /> Data prevista de início *
                   </Label>
                   <Input
                     id="start"
                     type="date"
+                    required
                     value={form.start_date}
                     onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="end" className="flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" /> Previsão de Conclusão
+                    <Calendar className="h-4 w-4" /> Data prevista de término *
                   </Label>
                   <Input
                     id="end"
                     type="date"
+                    required
                     value={form.end_date}
                     onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                   />

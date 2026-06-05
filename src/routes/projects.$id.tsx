@@ -273,7 +273,9 @@ function ProjectDetail() {
   };
 
   const saveProject = async () => {
-    if (!editForm.name || !editForm.description) return toast.error("Preencha os campos obrigatórios.");
+    if (!editForm.name || !editForm.description || !editForm.location || !editForm.beneficiary_name || !editForm.beneficiary_situation || !editForm.beneficiary_vulnerability || !editForm.estimated_cost || !editForm.financial_goal || !editForm.start_date || !editForm.end_date) {
+      return toast.error("Por favor, preencha todos os campos obrigatórios marcados com *");
+    }
     const { error } = await supabase
       .from("projects")
       .update({
@@ -508,17 +510,19 @@ function ProjectDetail() {
                         
                         <TabsContent value="basic" className="space-y-4 pt-4">
                           <div className="space-y-2">
-                            <Label htmlFor="name">Nome do Projeto</Label>
+                            <Label htmlFor="name">Nome do Projeto *</Label>
                             <Input
                               id="name"
+                              required
                               value={editForm?.name}
                               onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="desc">Descrição</Label>
+                            <Label htmlFor="desc">Descrição *</Label>
                             <Textarea
                               id="desc"
+                              required
                               rows={4}
                               value={editForm?.description}
                               onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
@@ -526,7 +530,7 @@ function ProjectDetail() {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>Tipo de melhoria</Label>
+                              <Label>Tipo de melhoria *</Label>
                               <select
                                 className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                                 value={editForm?.improvement_type}
@@ -538,7 +542,7 @@ function ProjectDetail() {
                               </select>
                             </div>
                             <div className="space-y-2">
-                              <Label>Urgência</Label>
+                              <Label>Urgência *</Label>
                               <select
                                 className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                                 value={editForm?.urgency}
@@ -551,9 +555,10 @@ function ProjectDetail() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="loc">Localização</Label>
+                            <Label htmlFor="loc">Localização *</Label>
                             <Input
                               id="loc"
+                              required
                               value={editForm?.location}
                               onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
                             />
@@ -562,16 +567,17 @@ function ProjectDetail() {
 
                         <TabsContent value="beneficiary" className="space-y-4 pt-4">
                           <div className="space-y-2">
-                            <Label htmlFor="b_name">Nome do Beneficiário</Label>
+                            <Label htmlFor="b_name">Nome do Beneficiário *</Label>
                             <Input
                               id="b_name"
+                              required
                               value={editForm?.beneficiary_name}
                               onChange={(e) => setEditForm({ ...editForm, beneficiary_name: e.target.value })}
                             />
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="residents">Moradores</Label>
+                              <Label htmlFor="residents">Moradores (opcional)</Label>
                               <Input
                                 id="residents"
                                 type="number"
@@ -580,7 +586,7 @@ function ProjectDetail() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="children">Crianças</Label>
+                              <Label htmlFor="children">Crianças (opcional)</Label>
                               <Input
                                 id="children"
                                 type="number"
@@ -590,12 +596,13 @@ function ProjectDetail() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label>Renda Familiar</Label>
+                            <Label>Renda Familiar (opcional)</Label>
                             <select
                               className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                               value={editForm?.beneficiary_income}
                               onChange={(e) => setEditForm({ ...editForm, beneficiary_income: e.target.value })}
                             >
+                              <option value="">Não informado</option>
                               {[
                                 "Até 1 salário mínimo",
                                 "1 a 2 salários mínimos",
@@ -608,17 +615,19 @@ function ProjectDetail() {
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="vulnerability">Vulnerabilidade</Label>
+                            <Label htmlFor="vulnerability">Vulnerabilidade *</Label>
                             <Input
                               id="vulnerability"
+                              required
                               value={editForm?.beneficiary_vulnerability}
                               onChange={(e) => setEditForm({ ...editForm, beneficiary_vulnerability: e.target.value })}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="situation">Situação Habitacional</Label>
+                            <Label htmlFor="situation">Situação Habitacional *</Label>
                             <Textarea
                               id="situation"
+                              required
                               value={editForm?.beneficiary_situation}
                               onChange={(e) => setEditForm({ ...editForm, beneficiary_situation: e.target.value })}
                             />
@@ -628,18 +637,20 @@ function ProjectDetail() {
                         <TabsContent value="planning" className="space-y-4 pt-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="est_cost">Custo Estimado (R$)</Label>
+                              <Label htmlFor="est_cost">Custo Estimado (R$) *</Label>
                               <Input
                                 id="est_cost"
+                                required
                                 type="number"
                                 value={editForm?.estimated_cost}
                                 onChange={(e) => setEditForm({ ...editForm, estimated_cost: e.target.value })}
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="fin_goal">Meta Financeira (R$)</Label>
+                              <Label htmlFor="fin_goal">Meta Financeira (R$) *</Label>
                               <Input
                                 id="fin_goal"
+                                required
                                 type="number"
                                 value={editForm?.financial_goal}
                                 onChange={(e) => setEditForm({ ...editForm, financial_goal: e.target.value })}
@@ -648,18 +659,20 @@ function ProjectDetail() {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="start">Data de Início</Label>
+                              <Label htmlFor="start">Data de Início *</Label>
                               <Input
                                 id="start"
+                                required
                                 type="date"
                                 value={editForm?.start_date}
                                 onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="end">Previsão de Término</Label>
+                              <Label htmlFor="end">Previsão de Término *</Label>
                               <Input
                                 id="end"
+                                required
                                 type="date"
                                 value={editForm?.end_date}
                                 onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
