@@ -81,7 +81,9 @@ export type Database = {
       material_requests: {
         Row: {
           address: string
+          contact_email: string | null
           contact_info: string
+          contact_phone: string | null
           created_at: string
           description: string
           id: string
@@ -92,7 +94,9 @@ export type Database = {
         }
         Insert: {
           address?: string
+          contact_email?: string | null
           contact_info?: string
+          contact_phone?: string | null
           created_at?: string
           description: string
           id?: string
@@ -103,7 +107,9 @@ export type Database = {
         }
         Update: {
           address?: string
+          contact_email?: string | null
           contact_info?: string
+          contact_phone?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -537,26 +543,35 @@ export type Database = {
       }
       volunteer_requests: {
         Row: {
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           id: string
           message: string
           project_id: string
+          skills: string | null
           status: string | null
           user_id: string
         }
         Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           message?: string
           project_id: string
+          skills?: string | null
           status?: string | null
           user_id: string
         }
         Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           message?: string
           project_id?: string
+          skills?: string | null
           status?: string | null
           user_id?: string
         }

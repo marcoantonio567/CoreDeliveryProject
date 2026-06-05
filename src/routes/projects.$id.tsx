@@ -41,8 +41,10 @@ import {
   HandHeart,
   History,
   Info,
+  Mail,
   MapPin,
   Pencil,
+  Phone,
   Plus,
   QrCode,
   Sparkles,
@@ -102,10 +104,17 @@ function ProjectDetail() {
   const [isNeedOpen, setIsNeedOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isVolunteerOpen, setIsVolunteerOpen] = useState(false);
   const [isEditNeedOpen, setIsEditNeedOpen] = useState(false);
   const [isDeleteNeedOpen, setIsDeleteNeedOpen] = useState(false);
 
   const [editForm, setEditForm] = useState<any>(null);
+  const [volunteerForm, setVolunteerForm] = useState({
+    message: "",
+    contact_phone: "",
+    contact_email: "",
+    skills: "",
+  });
   const [editingNeed, setEditingNeed] = useState<any>(null);
   const [deletingNeed, setDeletingNeed] = useState<any>(null);
   const [volunteerMsg, setVolunteerMsg] = useState("");
@@ -203,6 +212,24 @@ function ProjectDetail() {
     load();
   }, [id]);
 
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("phone, profession, specialty")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setVolunteerForm((f) => ({
+          ...f,
+          contact_phone: f.contact_phone || data.phone || "",
+          skills: f.skills || (data.profession ? `${data.profession}${data.specialty ? ` (${data.specialty})` : ""}` : ""),
+          contact_email: f.contact_email || user.email || "",
+        }));
+      });
+  }, [user]);
+
   // resolve names for volunteers/donations
   const [names, setNames] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -255,12 +282,30 @@ function ProjectDetail() {
 
   const volunteer = async () => {
     if (!user) return toast.error("Faça login.");
-    const { error } = await supabase
-      .from("volunteer_requests")
-      .insert({ project_id: id, user_id: user.id, message: volunteerMsg });
+    if (!volunteerForm.message || !volunteerForm.skills) {
+      return toast.error("Preencha os campos obrigatórios.");
+    }
+    if (!volunteerForm.contact_phone && !volunteerForm.contact_email) {
+      return toast.error("Informe pelo menos um meio de contato.");
+    }
+    const { error } = await supabase.from("volunteer_requests").insert({
+      project_id: id,
+      user_id: user.id,
+      message: volunteerForm.message,
+      skills: volunteerForm.skills,
+      contact_phone: volunteerForm.contact_phone,
+      contact_email: volunteerForm.contact_email,
+    });
     if (error) return toast.error(error.message);
     toast.success("Solicitação de voluntariado enviada!");
-    setVolunteerMsg("");
+    setVolunteerForm({
+      message: "",
+      skills: volunteerForm.skills, // keep skills for convenience
+      contact_phone: volunteerForm.contact_phone,
+      contact_email: volunteerForm.contact_email,
+    });
+    setIsVolunteerOpen(false);
+    load(true);
   };
 
   const donate = async () => {
@@ -1193,21 +1238,55 @@ function ProjectDetail() {
                             <div className="flex justify-between items-start">
                               <div>
                                 <p className="font-bold text-lg">{names[v.user_id] || "Carregando..."}</p>
-                                <p className="text-xs text-muted-foreground">{new Date(v.created_at).toLocaleString("pt-BR")}</p>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                  <p>{new Date(v.created_at).toLocaleString("pt-BR")}</p>
+                                  {v.skills && <p className="font-medium text-primary">Habilidade: {v.skills}</p>}
+                                </div>
                               </div>
                               <Badge variant={v.status === "Aprovada" ? "default" : v.status === "Recusada" ? "destructive" : "secondary"}>
                                 {v.status || "Pendente"}
                               </Badge>
                             </div>
-                            <p className="mt-4 text-sm whitespace-pre-wrap text-foreground/80 bg-muted/30 p-3 rounded-lg">
-                              {v.message}
-                            </p>
-                            {v.status === "Pendente" && (
-                              <div className="mt-4 flex gap-2">
-                                <Button size="sm" onClick={() => updateVolunteerStatus(v.id, "Aprovada")}>Aceitar</Button>
-                                <Button size="sm" variant="outline" onClick={() => updateVolunteerStatus(v.id, "Recusada")}>Recusar</Button>
+                            
+                            <div className="mt-4 grid sm:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Mensagem</p>
+                                <p className="text-sm text-foreground/80 bg-muted/30 p-3 rounded-lg border border-border/50">
+                                  {v.message}
+                                </p>
                               </div>
-                            )}
+                              <div className="space-y-3">
+                                <div className="space-y-1">
+                                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Contatos</p>
+                                  <div className="text-sm space-y-1">
+                                    {v.contact_phone && (
+                                      <p className="flex items-center gap-2">
+                                        <Phone className="h-3 w-3" /> {v.contact_phone}
+                                      </p>
+                                    )}
+                                    {v.contact_email && (
+                                      <p className="flex items-center gap-2">
+                                        <Mail className="h-3 w-3" /> {v.contact_email}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {v.status === "Pendente" && (
+                                  <div className="flex gap-2 pt-2">
+                                    <Button className="flex-1" size="sm" onClick={() => updateVolunteerStatus(v.id, "Aprovada")}>Aceitar</Button>
+                                    <Button className="flex-1" size="sm" variant="outline" onClick={() => updateVolunteerStatus(v.id, "Recusada")}>Recusar</Button>
+                                  </div>
+                                )}
+                                {v.status === "Aprovada" && v.contact_phone && (
+                                  <Button className="w-full" size="sm" variant="secondary" asChild>
+                                    <a href={`https://wa.me/${v.contact_phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer">
+                                      Falar no WhatsApp
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1233,15 +1312,73 @@ function ProjectDetail() {
 
                   <TabsContent value="volunteer" className="space-y-4">
                     <p className="text-sm text-muted-foreground">Ofereça seu tempo e habilidades para ajudar na execução desta melhoria.</p>
-                    <Textarea
-                      placeholder="Diga como você pode ajudar (ex: sou pedreiro e posso ajudar no fim de semana)"
-                      rows={4}
-                      value={volunteerMsg}
-                      onChange={(e) => setVolunteerMsg(e.target.value)}
-                    />
-                    <Button onClick={volunteer} className="w-full">
-                      Candidatar-se como voluntário
-                    </Button>
+                    {volunteers.some((v) => v.user_id === user?.id) ? (
+                      <div className="bg-primary/10 text-primary p-4 rounded-xl text-center font-medium text-sm">
+                        Sua candidatura já foi enviada!
+                      </div>
+                    ) : (
+                      <Dialog open={isVolunteerOpen} onOpenChange={setIsVolunteerOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="w-full">
+                            Candidatar-se como voluntário
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Candidatura de Voluntário</DialogTitle>
+                            <DialogDescription>
+                              Preencha os dados abaixo para que o proprietário possa entrar em contato.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label>Suas habilidades / Profissão *</Label>
+                              <Input
+                                placeholder="Ex: Pedreiro, Eletricista, Ajudante..."
+                                value={volunteerForm.skills}
+                                onChange={(e) => setVolunteerForm({ ...volunteerForm, skills: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Telefone / WhatsApp *</Label>
+                              <Input
+                                placeholder="(00) 00000-0000"
+                                value={volunteerForm.contact_phone}
+                                onChange={(e) => {
+                                  const digits = e.target.value.replace(/\D/g, "");
+                                  let formatted = digits;
+                                  if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+                                  if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+                                  setVolunteerForm({ ...volunteerForm, contact_phone: formatted });
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>E-mail</Label>
+                              <Input
+                                type="email"
+                                placeholder="seu@email.com"
+                                value={volunteerForm.contact_email}
+                                onChange={(e) => setVolunteerForm({ ...volunteerForm, contact_email: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Mensagem de interesse *</Label>
+                              <Textarea
+                                placeholder="Conte como você pode ajudar no projeto..."
+                                rows={4}
+                                value={volunteerForm.message}
+                                onChange={(e) => setVolunteerForm({ ...volunteerForm, message: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsVolunteerOpen(false)}>Cancelar</Button>
+                            <Button onClick={volunteer}>Enviar Candidatura</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="donate" className="space-y-4">

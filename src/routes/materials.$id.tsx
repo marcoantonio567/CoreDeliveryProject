@@ -28,7 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info, Pencil } from "lucide-react";
+import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info, Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/materials/$id")({ component: MaterialDetail });
 
@@ -46,7 +46,8 @@ function MaterialDetail() {
   const [form, setForm] = useState({
     quantity: "",
     description: "",
-    contact_info: "",
+    contact_phone: "",
+    contact_email: "",
     address: "",
     needs_freight: false,
   });
@@ -120,7 +121,7 @@ function MaterialDetail() {
         ].filter(Boolean);
         if (parts.length) setForm((f) => ({ ...f, address: parts.join(", ") }));
         if (data.phone)
-          setForm((f) => ({ ...f, contact_info: f.contact_info || data.phone || "" }));
+          setForm((f) => ({ ...f, contact_phone: data.phone || "" }));
       });
   }, [user]);
 
@@ -157,7 +158,9 @@ function MaterialDetail() {
   const submitRequest = async () => {
     if (!user) return toast.error("Faça login para solicitar.");
     if (!form.description.trim()) return toast.error("Descreva sua necessidade.");
-    if (!form.contact_info.trim()) return toast.error("Informe um contato.");
+    if (!form.contact_phone && !form.contact_email) {
+      return toast.error("Informe pelo menos um meio de contato (Telefone ou E-mail).");
+    }
     if (!form.address.trim()) return toast.error("Informe o endereço para entrega.");
 
     const { error } = await supabase.from("material_requests").insert({
@@ -165,13 +168,22 @@ function MaterialDetail() {
       user_id: user.id,
       quantity: form.quantity ? Number(form.quantity) : null,
       description: form.description,
-      contact_info: form.contact_info,
+      contact_phone: form.contact_phone,
+      contact_email: form.contact_email,
+      contact_info: form.contact_phone || form.contact_email,
       address: form.address,
       needs_freight: form.needs_freight,
     });
     if (error) return toast.error(error.message);
     toast.success("Solicitação enviada! O doador entrará em contato.");
-    setForm({ quantity: "", description: "", contact_info: "", address: "", needs_freight: false });
+    setForm({ quantity: "", description: "", contact_phone: "", contact_email: "", address: "", needs_freight: false });
+    loadRequests();
+  };
+
+  const cancelRequest = async (requestId: string) => {
+    const { error } = await supabase.from("material_requests").delete().eq("id", requestId);
+    if (error) return toast.error(error.message);
+    toast.success("Solicitação cancelada.");
     loadRequests();
   };
 
@@ -449,76 +461,113 @@ function MaterialDetail() {
         {/* Donation request form — hidden from owner */}
         {!isOwner && m.availability_status === "Disponível" && (
           <div className="mt-12 rounded-2xl border border-border bg-card p-8 shadow-sm max-w-3xl">
-            <div className="mb-6">
-              <h3 className="font-bold inline-flex items-center gap-2 text-2xl">
-                <HandHeart className="h-6 w-6 text-primary" /> Solicitar este material
-              </h3>
-              <p className="text-muted-foreground mt-2">
-                Conte por que você precisa deste material e como ele ajudará na sua melhoria habitacional.
-              </p>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="req-qty">Quantidade que você precisa ({m.unit || "unid."})</Label>
-                <Input
-                  id="req-qty"
-                  type="number"
-                  min={1}
-                  max={m.quantity}
-                  placeholder={`Ex: ${m.quantity}`}
-                  value={form.quantity}
-                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                />
+            {requests.some((r) => r.user_id === user?.id) ? (
+              <div className="text-center space-y-4">
+                <div className="bg-green-100 text-green-700 p-4 rounded-xl flex items-center justify-center gap-2 font-medium">
+                  <CheckCircle2 className="h-5 w-5" /> Você já demonstrou interesse neste material!
+                </div>
+                <p className="text-muted-foreground">O doador já recebeu seus dados e entrará em contato em breve.</p>
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => {
+                    const myReq = requests.find((r) => r.user_id === user?.id);
+                    if (myReq) cancelRequest(myReq.id);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Desfazer Interesse 
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="req-contact">Seu contato (WhatsApp / E-mail)</Label>
-                <Input
-                  id="req-contact"
-                  placeholder="Seu melhor contato"
-                  value={form.contact_info}
-                  onChange={(e) => setForm({ ...form, contact_info: e.target.value })}
-                />
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <h3 className="font-bold inline-flex items-center gap-2 text-2xl">
+                    <HandHeart className="h-6 w-6 text-primary" /> Solicitar este material
+                  </h3>
+                  <p className="text-muted-foreground mt-2">
+                    Conte por que você precisa deste material e como ele ajudará na sua melhoria habitacional.
+                  </p>
+                </div>
 
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="req-desc">Explique sua necessidade</Label>
-              <Textarea
-                id="req-desc"
-                rows={4}
-                placeholder="Conte brevemente sua história e o uso que dará ao material..."
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="req-qty">Quantidade que você precisa ({m.unit || "unid."})</Label>
+                    <Input
+                      id="req-qty"
+                      type="number"
+                      min={1}
+                      max={m.quantity}
+                      placeholder={`Ex: ${m.quantity}`}
+                      value={form.quantity}
+                      onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="req-phone">Telefone / WhatsApp</Label>
+                    <Input
+                      id="req-phone"
+                      placeholder="(00) 00000-0000"
+                      value={form.contact_phone}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "");
+                        let formatted = digits;
+                        if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+                        if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+                        setForm({ ...form, contact_phone: formatted });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="req-email">E-mail</Label>
+                    <Input
+                      id="req-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={form.contact_email}
+                      onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="req-address">Endereço para entrega</Label>
-              <Input
-                id="req-address"
-                placeholder="Rua, número, bairro, cidade – UF"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-              />
-            </div>
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="req-desc">Explique sua necessidade</Label>
+                  <Textarea
+                    id="req-desc"
+                    rows={4}
+                    placeholder="Conte brevemente sua história e o uso que dará ao material..."
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
 
-            <div className="mt-6 flex items-center space-x-2 bg-muted/50 p-3 rounded-lg border border-border">
-              <input
-                type="checkbox"
-                id="freight"
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                checked={form.needs_freight}
-                onChange={(e) => setForm({ ...form, needs_freight: e.target.checked })}
-              />
-              <Label htmlFor="freight" className="text-sm font-medium flex items-center gap-2">
-                <Truck className="h-4 w-4" /> Preciso de ajuda com o frete / transporte
-              </Label>
-            </div>
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="req-address">Endereço para entrega</Label>
+                  <Input
+                    id="req-address"
+                    placeholder="Rua, número, bairro, cidade – UF"
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  />
+                </div>
 
-            <Button onClick={submitRequest} className="mt-8 w-full sm:w-auto px-8" size="lg">
-              Enviar Solicitação
-            </Button>
+                <div className="mt-6 flex items-center space-x-2 bg-muted/50 p-3 rounded-lg border border-border">
+                  <input
+                    type="checkbox"
+                    id="freight"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    checked={form.needs_freight}
+                    onChange={(e) => setForm({ ...form, needs_freight: e.target.checked })}
+                  />
+                  <Label htmlFor="freight" className="text-sm font-medium flex items-center gap-2">
+                    <Truck className="h-4 w-4" /> Preciso de ajuda com o frete / transporte
+                  </Label>
+                </div>
+
+                <Button onClick={submitRequest} className="mt-8 w-full sm:w-auto px-8" size="lg">
+                  Enviar Solicitação
+                </Button>
+              </>
+            )}
           </div>
         )}
 

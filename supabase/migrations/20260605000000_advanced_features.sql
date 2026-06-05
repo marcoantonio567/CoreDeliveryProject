@@ -56,12 +56,6 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS availability text;
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS condition text; -- Novo, Seminovo, Usado
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS unit text; -- Unidade, Quilograma, Metro, Litro, Saco
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS availability_status text DEFAULT 'Disponível'; -- Disponível, Reservado, Doado
-ALTER TABLE materials ADD COLUMN IF NOT EXISTS contact_phone text;
-ALTER TABLE materials ADD COLUMN IF NOT EXISTS contact_email text;
-
--- Update Material RLS to allow admins
-DROP POLICY IF EXISTS "Owner update materials" ON public.materials;
-CREATE POLICY "Owner or admin update materials" ON public.materials FOR UPDATE TO authenticated USING (auth.uid() = owner_id OR public.has_role(auth.uid(), 'admin'));
 
 -- Volunteer Request Status
 ALTER TABLE volunteer_requests ADD COLUMN IF NOT EXISTS status text DEFAULT 'Pendente'; -- Pendente, Aprovada, Recusada

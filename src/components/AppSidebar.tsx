@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Hammer, Package, FolderKanban, Boxes, User as UserIcon, Shield, HardHat, LayoutDashboard } from "lucide-react";
+import { Home, Hammer, Package, FolderKanban, Boxes, User as UserIcon, Shield, HardHat, LayoutDashboard, HandHeart } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar,
@@ -21,6 +21,7 @@ export function AppSidebar() {
   const mine = [
     { title: "Meus projetos", url: "/my-projects", icon: FolderKanban },
     { title: "Meus materiais", url: "/my-materials", icon: Boxes },
+    { title: "Minhas solicitações", url: "/my-requests", icon: HandHeart },
     { title: "Perfil", url: "/profile", icon: UserIcon },
   ];
 
