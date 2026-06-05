@@ -145,9 +145,11 @@ function MyRequests() {
                       <div className="text-xs text-muted-foreground">
                         Qtd. Solicitada: <b>{r.quantity || "1"}</b>
                       </div>
-                      <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => cancel(r.id)}>
-                        <Trash2 className="h-4 w-4 mr-2" /> Desfazer Interesse
-                      </Button>
+                      {r.materials?.availability_status !== "Doado" && (
+                        <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => cancel(r.id)}>
+                          <Trash2 className="h-4 w-4 mr-2" /> Desfazer Interesse
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

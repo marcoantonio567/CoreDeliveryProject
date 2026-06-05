@@ -21,7 +21,8 @@ export function AppSidebar() {
   const mine = [
     { title: "Meus projetos", url: "/my-projects", icon: FolderKanban },
     { title: "Meus materiais", url: "/my-materials", icon: Boxes },
-    { title: "Minhas solicitações", url: "/my-requests", icon: HandHeart },
+    { title: "Minhas solicitações", url: "/my-requests", icon: Package },
+    { title: "Minhas candidaturas", url: "/my-volunteering", icon: HandHeart },
     { title: "Perfil", url: "/profile", icon: UserIcon },
   ];
 

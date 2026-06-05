@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as MyVolunteeringRouteImport } from './routes/my-volunteering'
 import { Route as MyRequestsRouteImport } from './routes/my-requests'
 import { Route as MyProjectsRouteImport } from './routes/my-projects'
 import { Route as MyMaterialsRouteImport } from './routes/my-materials'
@@ -42,6 +43,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyVolunteeringRoute = MyVolunteeringRouteImport.update({
+  id: '/my-volunteering',
+  path: '/my-volunteering',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyRequestsRoute = MyRequestsRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/my-materials': typeof MyMaterialsRoute
   '/my-projects': typeof MyProjectsRoute
   '/my-requests': typeof MyRequestsRoute
+  '/my-volunteering': typeof MyVolunteeringRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/my-materials': typeof MyMaterialsRoute
   '/my-projects': typeof MyProjectsRoute
   '/my-requests': typeof MyRequestsRoute
+  '/my-volunteering': typeof MyVolunteeringRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/my-materials': typeof MyMaterialsRoute
   '/my-projects': typeof MyProjectsRoute
   '/my-requests': typeof MyRequestsRoute
+  '/my-volunteering': typeof MyVolunteeringRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/my-materials'
     | '/my-projects'
     | '/my-requests'
+    | '/my-volunteering'
     | '/profile'
     | '/reset-password'
     | '/signup'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/my-materials'
     | '/my-projects'
     | '/my-requests'
+    | '/my-volunteering'
     | '/profile'
     | '/reset-password'
     | '/signup'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/my-materials'
     | '/my-projects'
     | '/my-requests'
+    | '/my-volunteering'
     | '/profile'
     | '/reset-password'
     | '/signup'
@@ -264,6 +276,7 @@ export interface RootRouteChildren {
   MyMaterialsRoute: typeof MyMaterialsRoute
   MyProjectsRoute: typeof MyProjectsRoute
   MyRequestsRoute: typeof MyRequestsRoute
+  MyVolunteeringRoute: typeof MyVolunteeringRoute
   ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-volunteering': {
+      id: '/my-volunteering'
+      path: '/my-volunteering'
+      fullPath: '/my-volunteering'
+      preLoaderRoute: typeof MyVolunteeringRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-requests': {
@@ -446,6 +466,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyMaterialsRoute: MyMaterialsRoute,
   MyProjectsRoute: MyProjectsRoute,
   MyRequestsRoute: MyRequestsRoute,
+  MyVolunteeringRoute: MyVolunteeringRoute,
   ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,

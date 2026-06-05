@@ -1313,8 +1313,22 @@ function ProjectDetail() {
                   <TabsContent value="volunteer" className="space-y-4">
                     <p className="text-sm text-muted-foreground">Ofereça seu tempo e habilidades para ajudar na execução desta melhoria.</p>
                     {volunteers.some((v) => v.user_id === user?.id) ? (
-                      <div className="bg-primary/10 text-primary p-4 rounded-xl text-center font-medium text-sm">
-                        Sua candidatura já foi enviada!
+                      <div className="space-y-4">
+                        <div className="bg-primary/10 text-primary p-4 rounded-xl text-center font-medium text-sm">
+                          Sua candidatura já foi enviada!
+                        </div>
+                        {volunteers.find((v) => v.user_id === user?.id)?.status !== "Recusada" && (
+                          <Button
+                            variant="outline"
+                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              const myReq = volunteers.find((v) => v.user_id === user?.id);
+                              if (myReq) cancelRequest(myReq.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Cancelar Candidatura
+                          </Button>
+                        )}
                       </div>
                     ) : (
                       <Dialog open={isVolunteerOpen} onOpenChange={setIsVolunteerOpen}>
