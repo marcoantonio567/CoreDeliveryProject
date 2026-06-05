@@ -6,11 +6,15 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useLocation,
+  useNavigate,
 } from "@tanstack/react-router";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 import appCss from "../styles.css?url";
 
@@ -114,19 +118,61 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const publicPaths = ["/", "/login", "/signup", "/forgot-password", "/reset-password"];
+  const isPublicPath = publicPaths.includes(location.pathname);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user && !isPublicPath) {
+        navigate({ to: "/login" });
+      } else if (user && (location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/")) {
+        navigate({ to: "/dashboard" });
+      }
+    }
+  }, [user, loading, isPublicPath, navigate, location.pathname]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user && !isPublicPath) {
+    return null; // Will redirect in useEffect
+  }
+
+  return <>{children}</>;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  const hideSidebar = ["/", "/login", "/signup", "/forgot-password", "/reset-password"].includes(
+    location.pathname,
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset className="min-w-0">
-            <Outlet />
-          </SidebarInset>
-        </SidebarProvider>
-        <Toaster />
+        <AuthGuard>
+          <SidebarProvider defaultOpen={!hideSidebar}>
+            {!hideSidebar && <AppSidebar />}
+            <SidebarInset className="min-w-0">
+              <Outlet />
+            </SidebarInset>
+          </SidebarProvider>
+          <Toaster />
+        </AuthGuard>
       </AuthProvider>
     </QueryClientProvider>
   );

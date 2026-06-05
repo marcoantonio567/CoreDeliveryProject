@@ -85,6 +85,14 @@ function Profile() {
   const [pixType, setPixType] = useState("");
   const [pixKey, setPixKey] = useState("");
 
+  // Professional / Volunteer
+  const [profession, setProfession] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [professionalRegister, setProfessionalRegister] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
+  const [vCity, setVCity] = useState("");
+  const [availability, setAvailability] = useState("");
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -107,6 +115,13 @@ function Profile() {
         setState(data.address_state || "");
         setPixType(data.pix_key_type || "");
         setPixKey(data.pix_key || "");
+        // New professional fields
+        setProfession(data.profession || "");
+        setSpecialty(data.specialty || "");
+        setProfessionalRegister(data.professional_register || "");
+        setExperienceYears(data.experience_years?.toString() || "");
+        setVCity(data.city || "");
+        setAvailability(data.availability || "");
       });
 
     supabase
@@ -213,6 +228,33 @@ function Profile() {
     }
   };
 
+  const saveProfessional = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({
+          profession: profession || null,
+          specialty: specialty || null,
+          professional_register: professionalRegister || null,
+          experience_years: experienceYears ? Number(experienceYears) : null,
+          city: vCity || null,
+          availability: availability || null,
+        })
+        .eq("id", user.id)
+        .select()
+        .single();
+      if (error) {
+        console.error("[saveProfessional]", error);
+        return toast.error(error.message);
+      }
+      if (!data) return toast.error("Nenhuma linha foi atualizada. Verifique sua sessão.");
+      toast.success("Perfil profissional salvo!");
+    } catch (e: any) {
+      console.error("[saveProfessional] unexpected:", e);
+      toast.error(e?.message ?? "Erro inesperado ao salvar.");
+    }
+  };
+
   const handleZipChange = async (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 8);
     const masked = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
@@ -280,24 +322,17 @@ function Profile() {
 
         {/* Tabs */}
         <Tabs defaultValue="personal">
-          <TabsList className="w-full">
-            <TabsTrigger value="personal" className="flex-1 gap-1.5">
-              <Info className="h-4 w-4" />
-              Informações Pessoais
-            </TabsTrigger>
-            <TabsTrigger value="address" className="flex-1 gap-1.5">
-              <MapPin className="h-4 w-4" />
-              Endereço
-            </TabsTrigger>
-            <TabsTrigger value="pix" className="flex-1 gap-1.5">
-              <QrCode className="h-4 w-4" />
-              PIX
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="personal">Pessoal</TabsTrigger>
+            <TabsTrigger value="address">Endereço</TabsTrigger>
+            <TabsTrigger value="pix">PIX</TabsTrigger>
+            <TabsTrigger value="professional">Profissional</TabsTrigger>
+            <TabsTrigger value="certs">Certificados</TabsTrigger>
           </TabsList>
 
           {/* ── Informações Pessoais ── */}
-          <TabsContent value="personal">
-            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <TabsContent value="personal" className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6">
+            <div className="space-y-4">
               <div className="space-y-1">
                 <Label htmlFor="name">Nome de exibição</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -336,8 +371,8 @@ function Profile() {
           </TabsContent>
 
           {/* ── Endereço ── */}
-          <TabsContent value="address">
-            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <TabsContent value="address" className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground rounded-lg bg-muted/60 px-3 py-2">
                 Seu endereço é <strong>privado</strong> e somente será exibido para usuários que
                 façam doação de frete.
@@ -417,8 +452,8 @@ function Profile() {
           </TabsContent>
 
           {/* ── PIX ── */}
-          <TabsContent value="pix">
-            <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <TabsContent value="pix" className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground rounded-lg bg-muted/60 px-3 py-2">
                 Sua chave PIX será usada para receber doações nos seus projetos.
               </p>
@@ -462,34 +497,74 @@ function Profile() {
               <Button onClick={savePix}>Salvar PIX</Button>
             </div>
           </TabsContent>
-        </Tabs>
 
-        {/* Certificates */}
-        <div>
-          <h2 className="text-xl font-semibold mb-3 inline-flex items-center gap-2">
-            <Award className="h-5 w-5 text-accent" />
-            Certificados
-          </h2>
-          {certs.length === 0 ? (
-            <p className="text-muted-foreground text-sm">Nenhum certificado ainda.</p>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {certs.map((c) => (
-                <div
-                  key={c.id}
-                  className="rounded-xl border-2 border-accent/40 bg-gradient-to-br from-accent/10 to-primary/5 p-5"
-                >
-                  <Award className="h-8 w-8 text-accent" />
-                  <h3 className="mt-3 font-semibold">Certificado de Participação</h3>
-                  <p className="text-sm text-muted-foreground">Projeto: {c.projects?.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Emitido em {new Date(c.issued_at).toLocaleDateString("pt-BR")}
-                  </p>
+          {/* ── Profissional ── */}
+          <TabsContent value="professional" className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground rounded-lg bg-muted/60 px-3 py-2">
+                Preencha seu perfil profissional para que os donos de projetos saibam suas habilidades ao se voluntariar.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="prof">Profissão</Label>
+                  <Input id="prof" placeholder="Ex: Pedreiro, Engenheiro..." value={profession} onChange={(e) => setProfession(e.target.value)} />
                 </div>
-              ))}
+                <div className="space-y-1">
+                  <Label htmlFor="spec">Especialidade</Label>
+                  <Input id="spec" placeholder="Ex: Alvenaria, Elétrica..." value={specialty} onChange={(e) => setSpecialty(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="reg">Registro Profissional (CREA, CAU, etc.)</Label>
+                  <Input id="reg" value={professionalRegister} onChange={(e) => setProfessionalRegister(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="exp">Anos de experiência</Label>
+                  <Input id="exp" type="number" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="vcity">Cidade de atuação</Label>
+                <Input id="vcity" value={vCity} onChange={(e) => setVCity(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="avail">Disponibilidade</Label>
+                <Input id="avail" placeholder="Ex: Fins de semana, Noite..." value={availability} onChange={(e) => setAvailability(e.target.value)} />
+              </div>
+              <Button onClick={saveProfessional}>Salvar perfil profissional</Button>
             </div>
-          )}
-        </div>
+          </TabsContent>
+
+          {/* ── Certificados ── */}
+          <TabsContent value="certs" className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6">
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Award className="h-5 w-5 text-accent" />
+                Seus Certificados
+              </h2>
+              {certs.length === 0 ? (
+                <p className="text-muted-foreground text-sm italic">Nenhum certificado emitido até o momento.</p>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {certs.map((c) => (
+                    <div
+                      key={c.id}
+                      className="rounded-xl border-2 border-accent/40 bg-gradient-to-br from-accent/10 to-primary/5 p-5"
+                    >
+                      <Award className="h-8 w-8 text-accent" />
+                      <h3 className="mt-3 font-semibold">Certificado de Participação</h3>
+                      <p className="text-sm text-muted-foreground">Projeto: {c.projects?.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Emitido em {new Date(c.issued_at).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

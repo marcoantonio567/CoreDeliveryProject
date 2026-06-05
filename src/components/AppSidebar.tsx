@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Hammer, Package, FolderKanban, Boxes, User as UserIcon, Shield, HardHat } from "lucide-react";
+import { Home, Hammer, Package, FolderKanban, Boxes, User as UserIcon, Shield, HardHat, LayoutDashboard } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar,
@@ -14,7 +14,7 @@ export function AppSidebar() {
   const active = (p: string) => path === p || path.startsWith(p + "/");
 
   const main = [
-    { title: "Início", url: "/", icon: Home },
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Projetos", url: "/projects", icon: Hammer },
     { title: "Materiais", url: "/materials", icon: Package },
   ];
@@ -27,7 +27,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <Link to="/" className="flex items-center gap-2 px-2 py-1.5">
+        <Link to="/dashboard" className="flex items-center gap-2 px-2 py-1.5">
           <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground shrink-0">
             <HardHat className="h-4 w-4" />
           </span>

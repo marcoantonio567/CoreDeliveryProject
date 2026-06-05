@@ -14,18 +14,46 @@ export const Route = createFileRoute("/materials/$id/edit")({ component: EditMat
 
 function EditMaterial() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const nav = useNavigate();
   const [form, setForm] = useState<any>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    supabase.from("materials").select("*").eq("id", id).maybeSingle().then(({ data }) => setForm(data));
+    supabase.from("materials").select("*").eq("id", id).maybeSingle().then(({ data }) => {
+      if (data) setForm(data);
+      else setNotFound(true);
+    });
   }, [id]);
 
   if (!user) return <div className="min-h-screen flex flex-col"><Header /><main className="flex-1 grid place-items-center"><p>Faça login.</p></main></div>;
+  
+  if (notFound)
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 grid place-items-center">
+          <div className="text-center">
+            <p className="text-xl font-semibold">Material não encontrado.</p>
+            <Button variant="link" onClick={() => nav({ to: "/materials" })}>Voltar para materiais</Button>
+          </div>
+        </main>
+      </div>
+    );
+
   if (!form) return <div className="min-h-screen flex flex-col"><Header /><main className="flex-1 grid place-items-center"><p>Carregando...</p></main></div>;
+
+  if (user.id !== form.owner_id && !isAdmin)
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 grid place-items-center">
+          <p>Você não tem permissão para editar este material.</p>
+        </main>
+      </div>
+    );
 
   const removeImage = (url: string) => setForm({ ...form, images: form.images.filter((u: string) => u !== url) });
 

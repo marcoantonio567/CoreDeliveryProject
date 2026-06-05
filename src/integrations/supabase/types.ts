@@ -116,6 +116,8 @@ export type Database = {
       }
       materials: {
         Row: {
+          availability_status: string | null
+          condition: string | null
           contact_info: string
           created_at: string
           description: string
@@ -127,8 +129,11 @@ export type Database = {
           quantity: number
           rejection_reason: string | null
           status: Database["public"]["Enums"]["material_status"]
+          unit: string | null
         }
         Insert: {
+          availability_status?: string | null
+          condition?: string | null
           contact_info?: string
           created_at?: string
           description: string
@@ -140,8 +145,11 @@ export type Database = {
           quantity?: number
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["material_status"]
+          unit?: string | null
         }
         Update: {
+          availability_status?: string | null
+          condition?: string | null
           contact_info?: string
           created_at?: string
           description?: string
@@ -153,6 +161,7 @@ export type Database = {
           quantity?: number
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["material_status"]
+          unit?: string | null
         }
         Relationships: []
       }
@@ -165,14 +174,20 @@ export type Database = {
           address_state: string | null
           address_street: string | null
           address_zip: string | null
+          availability: string | null
           avatar_url: string | null
           birth_date: string | null
+          city: string | null
           created_at: string
           display_name: string
+          experience_years: number | null
           id: string
           phone: string | null
           pix_key: string | null
           pix_key_type: string | null
+          profession: string | null
+          professional_register: string | null
+          specialty: string | null
           updated_at: string
         }
         Insert: {
@@ -183,14 +198,20 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          availability?: string | null
           avatar_url?: string | null
           birth_date?: string | null
+          city?: string | null
           created_at?: string
           display_name?: string
+          experience_years?: number | null
           id: string
           phone?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          profession?: string | null
+          professional_register?: string | null
+          specialty?: string | null
           updated_at?: string
         }
         Update: {
@@ -201,17 +222,102 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          availability?: string | null
           avatar_url?: string | null
           birth_date?: string | null
+          city?: string | null
           created_at?: string
           display_name?: string
+          experience_years?: number | null
           id?: string
           phone?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          profession?: string | null
+          professional_register?: string | null
+          specialty?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      project_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string | null
+          description: string
+          id: string
+          project_id: string | null
+          receipt_url: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date?: string | null
+          description: string
+          id?: string
+          project_id?: string | null
+          receipt_url?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string | null
+          description?: string
+          id?: string
+          project_id?: string | null
+          receipt_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_expenses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_needs: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          project_id: string | null
+          quantity_met: number | null
+          quantity_needed: number | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          project_id?: string | null
+          quantity_met?: number | null
+          quantity_needed?: number | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          quantity_met?: number | null
+          quantity_needed?: number | null
+          status?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_needs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_requests: {
         Row: {
@@ -257,48 +363,116 @@ export type Database = {
           },
         ]
       }
+      project_updates: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          images: string[] | null
+          project_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          images?: string[] | null
+          project_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[] | null
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
+          beneficiary_children: number | null
+          beneficiary_income: string | null
+          beneficiary_name: string | null
+          beneficiary_residents: number | null
+          beneficiary_situation: string | null
+          beneficiary_vulnerability: string | null
           completion_status: Database["public"]["Enums"]["completion_status"]
           created_at: string
           description: string
+          end_date: string | null
+          estimated_cost: number | null
+          financial_goal: number | null
           id: string
           images: string[]
           improvement_type: string
           location: string
           name: string
+          observations: string | null
           owner_id: string
           rejection_reason: string | null
+          start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
+          urgency: string | null
         }
         Insert: {
+          beneficiary_children?: number | null
+          beneficiary_income?: string | null
+          beneficiary_name?: string | null
+          beneficiary_residents?: number | null
+          beneficiary_situation?: string | null
+          beneficiary_vulnerability?: string | null
           completion_status?: Database["public"]["Enums"]["completion_status"]
           created_at?: string
           description: string
+          end_date?: string | null
+          estimated_cost?: number | null
+          financial_goal?: number | null
           id?: string
           images?: string[]
           improvement_type: string
           location: string
           name: string
+          observations?: string | null
           owner_id: string
           rejection_reason?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
+          urgency?: string | null
         }
         Update: {
+          beneficiary_children?: number | null
+          beneficiary_income?: string | null
+          beneficiary_name?: string | null
+          beneficiary_residents?: number | null
+          beneficiary_situation?: string | null
+          beneficiary_vulnerability?: string | null
           completion_status?: Database["public"]["Enums"]["completion_status"]
           created_at?: string
           description?: string
+          end_date?: string | null
+          estimated_cost?: number | null
+          financial_goal?: number | null
           id?: string
           images?: string[]
           improvement_type?: string
           location?: string
           name?: string
+          observations?: string | null
           owner_id?: string
           rejection_reason?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
+          urgency?: string | null
         }
         Relationships: []
       }
@@ -361,6 +535,7 @@ export type Database = {
           id: string
           message: string
           project_id: string
+          status: string | null
           user_id: string
         }
         Insert: {
@@ -368,6 +543,7 @@ export type Database = {
           id?: string
           message?: string
           project_id: string
+          status?: string | null
           user_id: string
         }
         Update: {
@@ -375,6 +551,7 @@ export type Database = {
           id?: string
           message?: string
           project_id?: string
+          status?: string | null
           user_id?: string
         }
         Relationships: [

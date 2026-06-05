@@ -1,19 +1,37 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero.jpg";
-import { HardHat, Heart, Home, Users } from "lucide-react";
+import { Award, HardHat, Heart, Home, Sparkles, Users } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
+  const [topUsers, setTopUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("id, display_name, avatar_url")
+      .limit(3)
+      .then(({ data }) => setTopUsers(data || []));
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         <section className="relative overflow-hidden">
           <div className="absolute inset-0">
-            <img src={heroImg} alt="Voluntários construindo telhado juntos" width={1536} height={1024} className="h-full w-full object-cover" />
+            <img
+              src={heroImg}
+              alt="Voluntários construindo telhado juntos"
+              width={1536}
+              height={1024}
+              className="h-full w-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30" />
           </div>
           <div className="relative container mx-auto px-4 py-24 md:py-36">
@@ -22,14 +40,22 @@ function Index() {
                 <HardHat className="h-3.5 w-3.5" /> Plataforma de solidariedade habitacional
               </span>
               <h1 className="mt-6 text-4xl md:text-6xl font-bold leading-tight">
-                Construindo lares,<br />transformando vidas.
+                Construindo lares,
+                <br />
+                transformando vidas.
               </h1>
               <p className="mt-6 text-lg text-muted-foreground">
-                Conectamos profissionais voluntários e doadores a projetos de melhoria habitacional em comunidades vulneráveis. Cada telhado, cada parede, cada ato de solidariedade conta.
+                Conectamos profissionais voluntários e doadores a projetos de melhoria habitacional
+                em comunidades vulneráveis. Cada telhado, cada parede, cada ato de solidariedade
+                conta.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button size="lg" asChild><Link to="/projects">Ver projetos</Link></Button>
-                <Button size="lg" variant="outline" asChild><Link to="/materials">Doar materiais</Link></Button>
+                <Button size="lg" asChild>
+                  <Link to="/projects">Ver projetos</Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link to="/materials">Doar materiais</Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -38,9 +64,21 @@ function Index() {
         <section className="container mx-auto px-4 py-20">
           <div className="grid gap-6 md:grid-cols-3">
             {[
-              { icon: Home, title: "Cadastre projetos", desc: "Comunidades publicam necessidades de melhoria habitacional." },
-              { icon: Users, title: "Voluntarie-se", desc: "Engenheiros, arquitetos e construtores oferecem mão de obra." },
-              { icon: Heart, title: "Doe materiais", desc: "Compartilhe insumos e recursos com quem precisa." },
+              {
+                icon: Home,
+                title: "Cadastre projetos",
+                desc: "Comunidades publicam necessidades de melhoria habitacional.",
+              },
+              {
+                icon: Users,
+                title: "Voluntarie-se",
+                desc: "Engenheiros, arquitetos e construtores oferecem mão de obra.",
+              },
+              {
+                icon: Heart,
+                title: "Doe materiais",
+                desc: "Compartilhe insumos e recursos com quem precisa.",
+              },
             ].map((f) => (
               <div key={f.title} className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <span className="grid h-12 w-12 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -50,6 +88,47 @@ function Index() {
                 <p className="mt-2 text-muted-foreground">{f.desc}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Community Highlights */}
+        <section className="bg-muted/30 py-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <h2 className="text-3xl font-bold flex items-center justify-center gap-2">
+                <Award className="h-8 w-8 text-accent" /> Destaques da Comunidade
+              </h2>
+              <p className="text-muted-foreground mt-4">
+                Conheça as pessoas que estão fazendo a diferença em nossos projetos de melhoria habitacional.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              {topUsers.map((u) => (
+                <div key={u.id} className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+                  <div className="mx-auto h-20 w-20 rounded-full bg-muted overflow-hidden mb-4 ring-4 ring-primary/10">
+                    {u.avatar_url ? (
+                      <img src={u.avatar_url} alt={u.display_name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                        <Users className="h-10 w-10" />
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold">{u.display_name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Voluntário Destaque</p>
+                  <div className="mt-6 flex justify-center gap-4 text-xs">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-lg text-primary">12</span>
+                      <span className="text-muted-foreground uppercase">Projetos</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-lg text-primary">48h</span>
+                      <span className="text-muted-foreground uppercase">Voluntariado</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </main>

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -6,15 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { HandHeart, MapPin, Package, Truck } from "lucide-react";
+import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info } from "lucide-react";
 
 export const Route = createFileRoute("/materials/$id")({ component: MaterialDetail });
 
 function MaterialDetail() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [m, setM] = useState<any>(null);
   const [requests, setRequests] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
@@ -28,7 +29,12 @@ function MaterialDetail() {
   });
 
   const loadMaterial = () =>
-    supabase.from("materials").select("*").eq("id", id).maybeSingle().then(({ data }) => setM(data));
+    supabase
+      .from("materials")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data }) => setM(data));
 
   const loadRequests = () =>
     supabase
@@ -48,7 +54,9 @@ function MaterialDetail() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("phone, address_street, address_number, address_complement, address_neighborhood, address_city, address_state, address_zip")
+      .select(
+        "phone, address_street, address_number, address_complement, address_neighborhood, address_city, address_state, address_zip",
+      )
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -63,7 +71,8 @@ function MaterialDetail() {
           data.address_zip,
         ].filter(Boolean);
         if (parts.length) setForm((f) => ({ ...f, address: parts.join(", ") }));
-        if (data.phone) setForm((f) => ({ ...f, contact_info: f.contact_info || data.phone || "" }));
+        if (data.phone)
+          setForm((f) => ({ ...f, contact_info: f.contact_info || data.phone || "" }));
       });
   }, [user]);
 
@@ -77,7 +86,9 @@ function MaterialDetail() {
       .in("id", ids)
       .then(({ data }) => {
         const map: Record<string, string> = {};
-        (data || []).forEach((p: any) => { map[p.id] = p.display_name; });
+        (data || []).forEach((p: any) => {
+          map[p.id] = p.display_name;
+        });
         setNames(map);
       });
   }, [requests]);
@@ -86,11 +97,14 @@ function MaterialDetail() {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 grid place-items-center"><p>Carregando...</p></main>
+        <main className="flex-1 grid place-items-center">
+          <p>Carregando...</p>
+        </main>
       </div>
     );
 
   const isOwner = user?.id === m.owner_id;
+  const canEdit = isOwner || isAdmin;
 
   const submitRequest = async () => {
     if (!user) return toast.error("Faça login para solicitar.");
@@ -113,84 +127,169 @@ function MaterialDetail() {
     loadRequests();
   };
 
+  const updateAvailability = async (status: string) => {
+    const { error } = await supabase
+      .from("materials")
+      .update({ availability_status: status })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Status atualizado!");
+    loadMaterial();
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto max-w-4xl px-4 py-10">
-        {/* Images */}
-        <div className="grid md:grid-cols-2 gap-3 mb-6">
-          {m.images.length
-            ? m.images.map((u: string, i: number) => (
-                <img key={i} src={u} alt="" className="rounded-lg aspect-video object-cover w-full" loading="lazy" />
-              ))
-            : (
-              <div className="rounded-lg bg-muted aspect-video col-span-2 grid place-items-center">
-                <Package className="h-12 w-12 text-muted-foreground" />
+      <main className="flex-1 container mx-auto max-w-5xl px-4 py-10">
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Left Column: Images */}
+          <div className="space-y-4">
+            <div className="rounded-2xl overflow-hidden border border-border bg-muted aspect-video">
+              {m.images?.[0] ? (
+                <img src={m.images[0]} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <Package className="h-12 w-12" />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {m.images?.slice(1, 5).map((u: string, i: number) => (
+                <img
+                  key={i}
+                  src={u}
+                  alt=""
+                  className="aspect-square rounded-xl object-cover border border-border"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column: Info & Actions */}
+          <div className="flex flex-col">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Badge variant="secondary" className="gap-1">
+                <CheckCircle2 className="h-3 w-3" /> {m.condition || "Estado não inf."}
+              </Badge>
+              <Badge variant="outline">
+                {m.availability_status || "Disponível"}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-start">
+              <h1 className="text-3xl md:text-4xl font-bold">{m.name}</h1>
+              {canEdit && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/materials/$id/edit" params={{ id }}>Editar</Link>
+                </Button>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                {m.location}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Package className="h-4 w-4" />
+                Quantidade: <b className="text-foreground ml-1">{m.quantity} {m.unit || "unid."}</b>
+              </span>
+            </div>
+
+            <div className="mt-6 p-5 rounded-xl border border-border bg-card">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                Descrição do Doador
+              </h3>
+              <p className="whitespace-pre-wrap text-foreground/90">{m.description}</p>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Info className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase font-semibold">Contato Direto</p>
+                <p className="font-medium">{m.contact_info}</p>
+              </div>
+            </div>
+
+            {isOwner && (
+              <div className="mt-8 space-y-3">
+                <p className="text-sm font-bold">Gerenciar disponibilidade:</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant={m.availability_status === "Disponível" ? "default" : "outline"}
+                    onClick={() => updateAvailability("Disponível")}
+                  >
+                    Disponível
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={m.availability_status === "Reservado" ? "default" : "outline"}
+                    onClick={() => updateAvailability("Reservado")}
+                  >
+                    Reservado
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={m.availability_status === "Doado" ? "default" : "outline"}
+                    onClick={() => updateAvailability("Doado")}
+                  >
+                    Já Doado
+                  </Button>
+                </div>
               </div>
             )}
-        </div>
-
-        {/* Info */}
-        <h1 className="text-3xl font-bold">{m.name}</h1>
-        <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{m.location}</span>
-          <span>Quantidade disponível: <b className="text-foreground">{m.quantity}</b></span>
-        </div>
-        <p className="mt-4 whitespace-pre-wrap">{m.description}</p>
-
-        {/* Contact (always visible) */}
-        <div className="mt-6 rounded-xl border border-border bg-card p-5">
-          <h3 className="font-semibold">Contato do doador</h3>
-          <p className="mt-2 text-sm">{m.contact_info}</p>
+          </div>
         </div>
 
         {/* Donation request form — hidden from owner */}
-        {!isOwner && (
-          <div className="mt-8 rounded-xl border border-border bg-card p-6 space-y-4">
-            <div>
-              <h3 className="font-semibold inline-flex items-center gap-2 text-lg">
-                <HandHeart className="h-5 w-5 text-primary" />Solicitar esta doação
+        {!isOwner && m.availability_status === "Disponível" && (
+          <div className="mt-12 rounded-2xl border border-border bg-card p-8 shadow-sm max-w-3xl">
+            <div className="mb-6">
+              <h3 className="font-bold inline-flex items-center gap-2 text-2xl">
+                <HandHeart className="h-6 w-6 text-primary" /> Solicitar este material
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Conte sua história e por que precisa deste material. O doador analisará seu pedido.
+              <p className="text-muted-foreground mt-2">
+                Conte por que você precisa deste material e como ele ajudará na sua melhoria habitacional.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="req-qty">Quantidade desejada <span className="text-muted-foreground">(opcional)</span></Label>
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="req-qty">Quantidade que você precisa ({m.unit || "unid."})</Label>
                 <Input
                   id="req-qty"
                   type="number"
                   min={1}
-                  placeholder="Ex: 20"
+                  max={m.quantity}
+                  placeholder={`Ex: ${m.quantity}`}
                   value={form.quantity}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })}
                 />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="req-contact">Contato (e-mail / telefone)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="req-contact">Seu contato (WhatsApp / E-mail)</Label>
                 <Input
                   id="req-contact"
-                  placeholder="seu@email.com ou (XX) XXXXX-XXXX"
+                  placeholder="Seu melhor contato"
                   value={form.contact_info}
                   onChange={(e) => setForm({ ...form, contact_info: e.target.value })}
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="req-desc">Descrição da necessidade</Label>
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="req-desc">Explique sua necessidade</Label>
               <Textarea
                 id="req-desc"
                 rows={4}
-                placeholder="Explique por que precisa deste material, como será utilizado e sua situação atual…"
+                placeholder="Conte brevemente sua história e o uso que dará ao material..."
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="mt-4 space-y-2">
               <Label htmlFor="req-address">Endereço para entrega</Label>
               <Input
                 id="req-address"
@@ -200,61 +299,67 @@ function MaterialDetail() {
               />
             </div>
 
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <div
-                role="checkbox"
-                aria-checked={form.needs_freight}
-                onClick={() => setForm({ ...form, needs_freight: !form.needs_freight })}
-                className={`h-5 w-5 shrink-0 rounded border transition-colors ${form.needs_freight ? "bg-primary border-primary" : "border-input bg-background"} flex items-center justify-center`}
-              >
-                {form.needs_freight && (
-                  <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 12 12">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              <span className="inline-flex items-center gap-2 text-sm">
-                <Truck className="h-4 w-4 text-muted-foreground" />
-                Preciso de ajuda com o frete
-              </span>
-            </label>
+            <div className="mt-6 flex items-center space-x-2 bg-muted/50 p-3 rounded-lg border border-border">
+              <input
+                type="checkbox"
+                id="freight"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                checked={form.needs_freight}
+                onChange={(e) => setForm({ ...form, needs_freight: e.target.checked })}
+              />
+              <Label htmlFor="freight" className="text-sm font-medium flex items-center gap-2">
+                <Truck className="h-4 w-4" /> Preciso de ajuda com o frete / transporte
+              </Label>
+            </div>
 
-            <Button onClick={submitRequest} className="w-full sm:w-auto">
-              Enviar solicitação
+            <Button onClick={submitRequest} className="mt-8 w-full sm:w-auto px-8" size="lg">
+              Enviar Solicitação
             </Button>
           </div>
         )}
 
-        {/* Owner view: list of requests */}
         {isOwner && (
-          <div className="mt-8 rounded-xl border border-border bg-card p-6">
-            <h3 className="font-semibold mb-4 inline-flex items-center gap-2">
-              <HandHeart className="h-5 w-5 text-primary" />Solicitações recebidas ({requests.length})
+          <div className="mt-12 space-y-6">
+            <h3 className="text-2xl font-bold flex items-center gap-2">
+              <Package className="h-6 w-6 text-primary" /> Interessados neste material ({requests.length})
             </h3>
             {requests.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma solicitação ainda.</p>
+              <div className="text-center py-12 border-2 border-dashed rounded-2xl border-border bg-muted/20">
+                <p className="text-muted-foreground">Ninguém solicitou este material ainda.</p>
+              </div>
             ) : (
-              <ul className="space-y-4">
+              <div className="grid gap-4">
                 {requests.map((r) => (
-                  <li key={r.id} className="rounded-lg border border-border p-4 text-sm space-y-1">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="font-medium">{names[r.user_id] || "Usuário"}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(r.created_at).toLocaleString("pt-BR")}
-                      </span>
+                  <div key={r.id} className="rounded-xl border border-border bg-card p-6 flex flex-col md:flex-row justify-between gap-6">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-bold text-lg">{names[r.user_id] || "Carregando..."}</p>
+                        {r.needs_freight && (
+                          <Badge variant="outline" className="text-orange-600 border-orange-600 gap-1">
+                            <Truck className="h-3 w-3" /> Precisa de Frete
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground/80 bg-muted/30 p-3 rounded-lg mb-3">
+                        {r.description}
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-4 text-xs text-muted-foreground">
+                        <p><b>Qtd solicitada:</b> {r.quantity || "Não inf."}</p>
+                        <p><b>Contato:</b> {r.contact_info}</p>
+                        <p className="sm:col-span-2"><b>Endereço:</b> {r.address}</p>
+                      </div>
                     </div>
-                    {r.quantity && <p className="text-muted-foreground">Quantidade: <b className="text-foreground">{r.quantity}</b></p>}
-                    <p className="whitespace-pre-wrap">{r.description}</p>
-                    <p className="text-muted-foreground">Contato: <b className="text-foreground">{r.contact_info}</b></p>
-                    <p className="text-muted-foreground">Endereço: <b className="text-foreground">{r.address}</b></p>
-                    {r.needs_freight && (
-                      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-secondary px-2 py-0.5">
-                        <Truck className="h-3 w-3" />Precisa de frete
-                      </span>
-                    )}
-                  </li>
+                    <div className="shrink-0 flex flex-col justify-between items-end">
+                      <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</p>
+                      <Button size="sm" variant="secondary" asChild className="mt-4">
+                        <a href={`https://wa.me/${r.contact_info.replace(/\D/g, "").trim()}`} target="_blank" rel="noreferrer">
+                          Falar com Interessado
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         )}

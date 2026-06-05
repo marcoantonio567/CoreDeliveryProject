@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { MapPin } from "lucide-react";
+import { Award, BarChart3, CheckCircle2, Flag, MapPin, Package, Users, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({ component: Admin });
 
@@ -24,16 +24,47 @@ function Admin() {
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [search, setSearch] = useState({ projects: "", materials: "", users: "" });
   const [promoteEmail, setPromoteEmail] = useState("");
+  const [metrics, setMetrics] = useState({
+    activeProjects: 0,
+    completedProjects: 0,
+    totalVolunteers: 0,
+    totalMaterials: 0,
+    totalRaised: 0,
+    pendingReports: 0,
+  });
 
   const reload = async () => {
-    const [{ data: pp }, { data: pm }, { data: r }, { data: c }, { data: fr }, { data: u }, { data: ar }] = await Promise.all([
+    const [
+      { data: pp },
+      { data: pm },
+      { data: r },
+      { data: c },
+      { data: fr },
+      { data: u },
+      { data: ar },
+      { data: allP },
+      { data: allM },
+      { data: allV },
+      { data: allD },
+    ] = await Promise.all([
       supabase.from("projects").select("*").eq("status", "pending").order("created_at"),
       supabase.from("materials").select("*").eq("status", "pending").order("created_at"),
       supabase.from("reports").select("project_id, reason, created_at, projects(*)"),
       supabase.from("projects").select("*").eq("completion_status", "completion_requested"),
-      supabase.from("project_requests").select("*, projects(name)").eq("request_type", "frete").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, display_name, created_at").order("created_at", { ascending: false }),
+      supabase
+        .from("project_requests")
+        .select("*, projects(name)")
+        .eq("request_type", "frete")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("id, display_name, created_at")
+        .order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id").eq("role", "admin"),
+      supabase.from("projects").select("status, completion_status"),
+      supabase.from("materials").select("id"),
+      supabase.from("volunteer_requests").select("id"),
+      supabase.from("donations").select("amount"),
     ]);
     setPendingProjects(pp || []);
     setPendingMaterials(pm || []);
@@ -41,13 +72,23 @@ function Admin() {
     (r || []).forEach((row: any) => {
       if (!row.projects) return;
       map[row.project_id] = map[row.project_id] || { count: 0, project: row.projects, reasons: [] };
-      map[row.project_id].count++; map[row.project_id].reasons.push(row.reason);
+      map[row.project_id].count++;
+      map[row.project_id].reasons.push(row.reason);
     });
     setReported(Object.values(map).sort((a, b) => b.count - a.count));
     setCompletionReq(c || []);
     setFreight(fr || []);
     setUsers(u || []);
     setAdminIds(new Set((ar || []).map((x: any) => x.user_id)));
+
+    setMetrics({
+      activeProjects: (allP || []).filter((p) => p.status === "approved" && p.completion_status === "in_progress").length,
+      completedProjects: (allP || []).filter((p) => p.completion_status === "completed").length,
+      totalVolunteers: (allV || []).length,
+      totalMaterials: (allM || []).length,
+      totalRaised: (allD || []).reduce((acc, curr) => acc + (curr.amount || 0), 0),
+      pendingReports: (r || []).length,
+    });
   };
 
   useEffect(() => { if (isAdmin) reload(); }, [isAdmin]);
@@ -112,7 +153,12 @@ function Admin() {
             <p className="text-xs text-muted-foreground mt-1">Autor: {owner?.display_name || p.owner_id}</p>
             <p className="mt-3 text-sm whitespace-pre-wrap">{p.description}</p>
           </div>
-          <Link to="/projects/$id" params={{ id: p.id }} className="text-xs text-primary hover:underline self-start">Ver página completa</Link>
+          <div className="flex flex-col items-end gap-2 self-start">
+            <Link to="/projects/$id" params={{ id: p.id }} className="text-xs text-primary hover:underline">Ver página completa</Link>
+            <Button size="sm" variant="outline" asChild className="h-7 text-xs">
+              <Link to="/projects/$id/edit" params={{ id: p.id }}>Editar Projeto</Link>
+            </Button>
+          </div>
         </div>
         {p.images?.length > 0 && (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -160,8 +206,9 @@ function Admin() {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-10">
         <h1 className="text-3xl font-bold mb-6">Painel de Administração</h1>
-        <Tabs defaultValue="projects">
-          <TabsList className="flex-wrap h-auto">
+        <Tabs defaultValue="metrics">
+          <TabsList className="flex-wrap h-auto mb-6">
+            <TabsTrigger value="metrics" className="gap-2"><BarChart3 className="h-4 w-4" /> Métricas</TabsTrigger>
             <TabsTrigger value="projects">Projetos ({pendingProjects.length})</TabsTrigger>
             <TabsTrigger value="materials">Materiais ({pendingMaterials.length})</TabsTrigger>
             <TabsTrigger value="reports">Denúncias ({reported.length})</TabsTrigger>
@@ -169,6 +216,59 @@ function Admin() {
             <TabsTrigger value="freight">Frete ({freight.length})</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="metrics" className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3 text-primary mb-2">
+                  <BarChart3 className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Ativos</span>
+                </div>
+                <p className="text-3xl font-bold">{metrics.activeProjects}</p>
+                <p className="text-xs text-muted-foreground mt-1">Projetos em andamento</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3 text-green-600 mb-2">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Concluídos</span>
+                </div>
+                <p className="text-3xl font-bold">{metrics.completedProjects}</p>
+                <p className="text-xs text-muted-foreground mt-1">Impacto total realizado</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3 text-blue-600 mb-2">
+                  <Users className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Voluntários</span>
+                </div>
+                <p className="text-3xl font-bold">{metrics.totalVolunteers}</p>
+                <p className="text-xs text-muted-foreground mt-1">Solicitações totais</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3 text-orange-600 mb-2">
+                  <Package className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Materiais</span>
+                </div>
+                <p className="text-3xl font-bold">{metrics.totalMaterials}</p>
+                <p className="text-xs text-muted-foreground mt-1">Doações cadastradas</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3 text-emerald-600 mb-2">
+                  <Wallet className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Arrecadado</span>
+                </div>
+                <p className="text-2xl font-bold">R$ {metrics.totalRaised.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Total via plataforma</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3 text-destructive mb-2">
+                  <Flag className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Denúncias</span>
+                </div>
+                <p className="text-3xl font-bold">{metrics.pendingReports}</p>
+                <p className="text-xs text-muted-foreground mt-1">Registros totais</p>
+              </div>
+            </div>
+          </TabsContent>
 
           <TabsContent value="projects" className="space-y-4 mt-4">
             <Input placeholder="Pesquisar projetos..." value={search.projects} onChange={(e) => setSearch({ ...search, projects: e.target.value })} className="max-w-md" />
