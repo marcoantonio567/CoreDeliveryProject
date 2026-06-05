@@ -106,6 +106,7 @@ function ProjectDetail() {
   const [isNeedOpen, setIsNeedOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isRevenueOpen, setIsRevenueOpen] = useState(false);
   const [isVolunteerOpen, setIsVolunteerOpen] = useState(false);
   const [isEditNeedOpen, setIsEditNeedOpen] = useState(false);
   const [isDeleteNeedOpen, setIsDeleteNeedOpen] = useState(false);
@@ -135,6 +136,7 @@ function ProjectDetail() {
   const [newNeed, setNewNeed] = useState({ type: "Material", description: "", quantity_needed: "" });
   const [newUpdate, setNewUpdate] = useState({ description: "" });
   const [newExpense, setNewExpense] = useState({ description: "", amount: "", date: new Date().toISOString().split("T")[0] });
+  const [newRevenue, setNewRevenue] = useState({ description: "", amount: "", date: new Date().toISOString().split("T")[0] });
 
   const [reqForm, setReqForm] = useState({
     request_type: "material",
@@ -315,6 +317,7 @@ function ProjectDetail() {
 
   const donate = async () => {
     if (!user) return toast.error("Faça login.");
+    if (user.id === p.owner_id) return toast.error("Você não pode doar para o seu próprio projeto.");
     const { error } = await supabase.from("donations").insert({
       project_id: id,
       user_id: user.id,
@@ -513,6 +516,28 @@ function ProjectDetail() {
     load(true);
   };
 
+  const addRevenue = async () => {
+    if (!newRevenue.description || !newRevenue.amount || !newRevenue.date) {
+      return toast.error("Preencha todos os campos da arrecadação.");
+    }
+    const { error } = await supabase.from("donations").insert({
+      project_id: id,
+      user_id: user?.id,
+      description: newRevenue.description,
+      amount: Number(newRevenue.amount),
+      created_at: new Date(newRevenue.date).toISOString(),
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Arrecadação registrada!");
+    setNewRevenue({
+      description: "",
+      amount: "",
+      date: new Date().toISOString().split("T")[0],
+    });
+    setIsRevenueOpen(false);
+    load(true);
+  };
+
   const updateVolunteerStatus = async (vId: string, status: string) => {
     const { error } = await supabase.from("volunteer_requests").update({ status }).eq("id", vId);
     if (error) return toast.error(error.message);
@@ -582,8 +607,8 @@ function ProjectDetail() {
                       <TrendingUp className="h-4 w-4 text-primary" /> Meta Financeira
                     </span>
                     <span className="text-muted-foreground">
-                      R$ {donations.reduce((acc, d) => acc + (d.amount || 0), 0).toFixed(2)} / R${" "}
-                      {Number(p.financial_goal).toFixed(2)}
+                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(donations.reduce((acc, d) => acc + (d.amount || 0), 0))} /{" "}
+                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.financial_goal)}
                     </span>
                   </div>
                   <Progress
@@ -973,7 +998,7 @@ function ProjectDetail() {
                         <Wallet className="h-4 w-4" /> Custo Estimado
                       </h4>
                       <p className="text-2xl font-bold text-primary">
-                        R$ {Number(p.estimated_cost).toFixed(2)}
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.estimated_cost)}
                       </p>
                       <p className="text-xs text-muted-foreground">Valor total previsto para a obra</p>
                     </div>
@@ -1100,19 +1125,19 @@ function ProjectDetail() {
                   <div className="rounded-xl border border-border bg-card p-4">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Arrecadado</p>
                     <p className="text-xl font-bold text-green-600">
-                      R$ {donations.reduce((acc, d) => acc + (d.amount || 0), 0).toFixed(2)}
+                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(donations.reduce((acc, d) => acc + (d.amount || 0), 0))}
                     </p>
                   </div>
                   <div className="rounded-xl border border-border bg-card p-4">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Utilizado</p>
                     <p className="text-xl font-bold text-destructive">
-                      R$ {expenses.reduce((acc, e) => acc + (e.amount || 0), 0).toFixed(2)}
+                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(expenses.reduce((acc, e) => acc + (e.amount || 0), 0))}
                     </p>
                   </div>
                   <div className="rounded-xl border border-border bg-card p-4">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Saldo</p>
                     <p className="text-xl font-bold">
-                      R$ {(donations.reduce((acc, d) => acc + (d.amount || 0), 0) - expenses.reduce((acc, e) => acc + (e.amount || 0), 0)).toFixed(2)}
+                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(donations.reduce((acc, d) => acc + (d.amount || 0), 0) - expenses.reduce((acc, e) => acc + (e.amount || 0), 0))}
                     </p>
                   </div>
                 </div>
@@ -1138,7 +1163,9 @@ function ProjectDetail() {
                             <tr key={e.id}>
                               <td className="px-4 py-3">{new Date(e.date).toLocaleDateString("pt-BR")}</td>
                               <td className="px-4 py-3">{e.description}</td>
-                              <td className="px-4 py-3 text-right font-medium">R$ {Number(e.amount).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-right font-medium">
+                                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(e.amount)}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1278,6 +1305,52 @@ function ProjectDetail() {
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
+
+                        <Dialog open={isRevenueOpen} onOpenChange={setIsRevenueOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="secondary" className="gap-2 bg-green-600 hover:bg-green-700 text-white">
+                              <TrendingUp className="h-4 w-4" /> Registrar Arrecadação
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Registrar Arrecadação / Doação Recebida</DialogTitle>
+                              <DialogDescription>
+                                Registre valores recebidos fora da plataforma ou doações diretas.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label>Data *</Label>
+                                <Input
+                                  type="date"
+                                  value={newRevenue.date}
+                                  onChange={(e) => setNewRevenue({ ...newRevenue, date: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Descrição / Origem *</Label>
+                                <Input
+                                  placeholder="Ex: Doação em dinheiro de vizinho"
+                                  value={newRevenue.description}
+                                  onChange={(e) => setNewRevenue({ ...newRevenue, description: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Valor (R$) *</Label>
+                                <Input
+                                  type="number"
+                                  value={newRevenue.amount}
+                                  onChange={(e) => setNewRevenue({ ...newRevenue, amount: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setIsRevenueOpen(false)}>Cancelar</Button>
+                              <Button onClick={addRevenue}>Salvar Arrecadação</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </div>
                   </div>
@@ -1369,7 +1442,11 @@ function ProjectDetail() {
 
                   <TabsContent value="volunteer" className="space-y-4">
                     <p className="text-sm text-muted-foreground">Ofereça seu tempo e habilidades para ajudar na execução desta melhoria.</p>
-                    {volunteers.some((v) => v.user_id === user?.id) ? (
+                    {user?.id === p.owner_id ? (
+                      <div className="bg-muted text-muted-foreground p-4 rounded-xl text-center font-medium text-sm border border-dashed">
+                        Você é o proprietário deste projeto.
+                      </div>
+                    ) : volunteers.some((v) => v.user_id === user?.id) ? (
                       <div className="space-y-4">
                         <div className="bg-primary/10 text-primary p-4 rounded-xl text-center font-medium text-sm">
                           Sua candidatura já foi enviada!

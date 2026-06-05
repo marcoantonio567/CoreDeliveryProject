@@ -86,6 +86,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           description: string
+          freight_approved: boolean | null
           id: string
           material_id: string
           needs_freight: boolean
@@ -99,6 +100,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description: string
+          freight_approved?: boolean | null
           id?: string
           material_id: string
           needs_freight?: boolean
@@ -112,6 +114,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description?: string
+          freight_approved?: boolean | null
           id?: string
           material_id?: string
           needs_freight?: boolean

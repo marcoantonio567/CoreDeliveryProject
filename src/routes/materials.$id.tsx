@@ -191,6 +191,16 @@ function MaterialDetail() {
     loadRequests();
   };
 
+  const updateFreightStatus = async (requestId: string, approved: boolean) => {
+    const { error } = await supabase
+      .from("material_requests")
+      .update({ freight_approved: approved })
+      .eq("id", requestId);
+    if (error) return toast.error(error.message);
+    toast.success(approved ? "Frete aprovado!" : "Frete recusado.");
+    loadRequests();
+  };
+
   const updateAvailability = async () => {
     if (!pendingStatus) return;
     const { error } = await supabase
@@ -639,9 +649,38 @@ function MaterialDetail() {
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-bold text-lg">{names[r.user_id] || "Carregando..."}</p>
                         {r.needs_freight && (
-                          <Badge variant="outline" className="text-orange-600 border-orange-600 gap-1">
-                            <Truck className="h-3 w-3" /> Precisa de Frete
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline" className="text-orange-600 border-orange-600 gap-1">
+                              <Truck className="h-3 w-3" /> Precisa de Frete
+                            </Badge>
+                            {r.freight_approved === true ? (
+                              <Badge className="bg-green-600 hover:bg-green-600 text-white border-transparent gap-1">
+                                <CheckCircle2 className="h-3 w-3" /> Frete Aprovado
+                              </Badge>
+                            ) : r.freight_approved === false ? (
+                              <Badge variant="destructive" className="gap-1">
+                                Frete Recusado
+                              </Badge>
+                            ) : (
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  className="h-7 px-2 text-[10px] bg-green-600 hover:bg-green-700" 
+                                  onClick={() => updateFreightStatus(r.id, true)}
+                                >
+                                  Aprovar Frete
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-7 px-2 text-[10px]" 
+                                  onClick={() => updateFreightStatus(r.id, false)}
+                                >
+                                  Recusar
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                       <p className="text-sm text-foreground/80 bg-muted/30 p-3 rounded-lg mb-3">
