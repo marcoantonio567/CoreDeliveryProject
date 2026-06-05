@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowRight,
+  Calendar,
   CheckCircle2,
   Clock,
   Copy,
@@ -26,8 +27,10 @@ import {
   QrCode,
   Sparkles,
   TrendingUp,
+  Users,
+  Wallet,
 } from "lucide-react";
-import { Label } from "recharts";
+import { Label } from "@/components/ui/label";
 
 function tlv(tag: string, value: string) {
   return `${tag}${value.length.toString().padStart(2, "0")}${value}`;
@@ -73,6 +76,7 @@ function ProjectDetail() {
   const { id } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const [p, setP] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [volunteerMsg, setVolunteerMsg] = useState("");
   const [donationDesc, setDonationDesc] = useState("");
   const [donationAmt, setDonationAmt] = useState("");
@@ -97,48 +101,53 @@ function ProjectDetail() {
   const [ownerPix, setOwnerPix] = useState<{ pix_key: string; pix_key_type: string } | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
-    setP(data);
-    if (data?.owner_id) {
-      supabase
-        .from("profiles")
-        .select("pix_key, pix_key_type")
-        .eq("id", data.owner_id)
-        .maybeSingle()
-        .then(({ data: pix }) => {
-          setOwnerPix(
-            pix?.pix_key ? { pix_key: pix.pix_key, pix_key_type: pix.pix_key_type ?? "" } : null,
-          );
-        });
-    }
-    const { data: v } = await supabase
-      .from("volunteer_requests")
-      .select("id, message, created_at, user_id, status")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false });
-    setVolunteers(v || []);
-    const { data: d } = await supabase
-      .from("donations")
-      .select("id, description, amount, created_at, user_id")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false });
-    setDonations(d || []);
-    const { data: rq } = await supabase
-      .from("project_requests")
-      .select("*")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false });
-    setRequests(rq || []);
+    setLoading(true);
+    try {
+      const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
+      setP(data);
+      if (data?.owner_id) {
+        supabase
+          .from("profiles")
+          .select("pix_key, pix_key_type")
+          .eq("id", data.owner_id)
+          .maybeSingle()
+          .then(({ data: pix }) => {
+            setOwnerPix(
+              pix?.pix_key ? { pix_key: pix.pix_key, pix_key_type: pix.pix_key_type ?? "" } : null,
+            );
+          });
+      }
+      const { data: v } = await supabase
+        .from("volunteer_requests")
+        .select("id, message, created_at, user_id, status")
+        .eq("project_id", id)
+        .order("created_at", { ascending: false });
+      setVolunteers(v || []);
+      const { data: d } = await supabase
+        .from("donations")
+        .select("id, description, amount, created_at, user_id")
+        .eq("project_id", id)
+        .order("created_at", { ascending: false });
+      setDonations(d || []);
+      const { data: rq } = await supabase
+        .from("project_requests")
+        .select("*")
+        .eq("project_id", id)
+        .order("created_at", { ascending: false });
+      setRequests(rq || []);
 
-    // Load new advanced data
-    const [{ data: nd }, { data: up }, { data: ex }] = await Promise.all([
-      supabase.from("project_needs").select("*").eq("project_id", id).order("created_at"),
-      supabase.from("project_updates").select("*").eq("project_id", id).order("created_at", { ascending: false }),
-      supabase.from("project_expenses").select("*").eq("project_id", id).order("date", { ascending: false }),
-    ]);
-    setNeeds(nd || []);
-    setUpdates(up || []);
-    setExpenses(ex || []);
+      // Load new advanced data
+      const [{ data: nd }, { data: up }, { data: ex }] = await Promise.all([
+        supabase.from("project_needs").select("*").eq("project_id", id).order("created_at"),
+        supabase.from("project_updates").select("*").eq("project_id", id).order("created_at", { ascending: false }),
+        supabase.from("project_expenses").select("*").eq("project_id", id).order("date", { ascending: false }),
+      ]);
+      setNeeds(nd || []);
+      setUpdates(up || []);
+      setExpenses(ex || []);
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => {
     load();
@@ -170,12 +179,26 @@ function ProjectDetail() {
       });
   }, [volunteers, donations, requests]);
 
-  if (!p)
+  if (loading)
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 grid place-items-center">
           <p>Carregando...</p>
+        </main>
+      </div>
+    );
+
+  if (!p)
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 grid place-items-center space-y-4">
+          <p className="text-xl font-bold">Projeto não encontrado</p>
+          <p className="text-muted-foreground">O projeto que você procura não existe ou ainda não foi aprovado.</p>
+          <Button asChild>
+            <Link to="/">Voltar para o início</Link>
+          </Button>
         </main>
       </div>
     );
