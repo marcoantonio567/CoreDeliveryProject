@@ -517,12 +517,13 @@ function ProjectDetail() {
   };
 
   const addRevenue = async () => {
+    if (!user) return toast.error("Faça login.");
     if (!newRevenue.description || !newRevenue.amount || !newRevenue.date) {
       return toast.error("Preencha todos os campos da arrecadação.");
     }
     const { error } = await supabase.from("donations").insert({
       project_id: id,
-      user_id: user?.id,
+      user_id: user.id,
       description: newRevenue.description,
       amount: Number(newRevenue.amount),
       created_at: new Date(newRevenue.date).toISOString(),
