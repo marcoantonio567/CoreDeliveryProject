@@ -19,7 +19,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/materials/$id")({ component: MaterialDetail });
 
@@ -30,7 +39,9 @@ function MaterialDetail() {
   const [requests, setRequests] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   const [form, setForm] = useState({
     quantity: "",
@@ -40,13 +51,36 @@ function MaterialDetail() {
     needs_freight: false,
   });
 
+  const [editForm, setEditForm] = useState({
+    name: "",
+    description: "",
+    location: "",
+    quantity: 1,
+    contact_info: "",
+    condition: "Novo",
+    unit: "Unidade",
+  });
+
   const loadMaterial = () =>
     supabase
       .from("materials")
       .select("*")
       .eq("id", id)
       .maybeSingle()
-      .then(({ data }) => setM(data));
+      .then(({ data }) => {
+        setM(data);
+        if (data) {
+          setEditForm({
+            name: data.name || "",
+            description: data.description || "",
+            location: data.location || "",
+            quantity: data.quantity || 1,
+            contact_info: data.contact_info || "",
+            condition: data.condition || "Novo",
+            unit: data.unit || "Unidade",
+          });
+        }
+      });
 
   const loadRequests = () =>
     supabase
@@ -157,6 +191,35 @@ function MaterialDetail() {
     setIsConfirmOpen(true);
   };
 
+  const saveMaterial = async () => {
+    if (!editForm.name || !editForm.description || !editForm.location || !editForm.contact_info) {
+      return toast.error("Preencha os campos obrigatórios.");
+    }
+    setEditLoading(true);
+    try {
+      const { error } = await supabase
+        .from("materials")
+        .update({
+          name: editForm.name,
+          description: editForm.description,
+          location: editForm.location,
+          quantity: Number(editForm.quantity),
+          contact_info: editForm.contact_info,
+          condition: editForm.condition,
+          unit: editForm.unit,
+        })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Material atualizado!");
+      setIsEditOpen(false);
+      loadMaterial();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -198,9 +261,100 @@ function MaterialDetail() {
             <div className="flex justify-between items-start">
               <h1 className="text-3xl md:text-4xl font-bold">{m.name}</h1>
               {canEdit && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/materials/$id/edit" params={{ id }}>Editar</Link>
-                </Button>
+                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Pencil className="h-4 w-4" /> Editar Detalhes
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Editar Material</DialogTitle>
+                      <DialogDescription>
+                        Atualize as informações do seu anúncio de material.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-name">Nome do Material *</Label>
+                        <Input
+                          id="edit-name"
+                          value={editForm.name}
+                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Estado de Conservação</Label>
+                          <select
+                            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                            value={editForm.condition}
+                            onChange={(e) => setEditForm({ ...editForm, condition: e.target.value })}
+                          >
+                            {["Novo", "Seminovo", "Usado"].map((o) => (
+                              <option key={o}>{o}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Unidade de Medida</Label>
+                          <select
+                            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                            value={editForm.unit}
+                            onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                          >
+                            {["Unidade", "Quilograma", "Metro", "Litro", "Saco"].map((o) => (
+                              <option key={o}>{o}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-qty">Quantidade</Label>
+                          <Input
+                            id="edit-qty"
+                            type="number"
+                            min={1}
+                            value={editForm.quantity}
+                            onChange={(e) => setEditForm({ ...editForm, quantity: Number(e.target.value) })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-loc">Localização *</Label>
+                          <Input
+                            id="edit-loc"
+                            value={editForm.location}
+                            onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-desc">Descrição *</Label>
+                        <Textarea
+                          id="edit-desc"
+                          rows={4}
+                          value={editForm.description}
+                          onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-contact">Contato Direto *</Label>
+                        <Input
+                          id="edit-contact"
+                          value={editForm.contact_info}
+                          onChange={(e) => setEditForm({ ...editForm, contact_info: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
+                      <Button onClick={saveMaterial} disabled={editLoading}>
+                        {editLoading ? "Salvando..." : "Salvar Alterações"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               )}
             </div>
             <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
