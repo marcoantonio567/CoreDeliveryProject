@@ -118,7 +118,9 @@ export type Database = {
         Row: {
           availability_status: string | null
           condition: string | null
+          contact_email: string | null
           contact_info: string
+          contact_phone: string | null
           created_at: string
           description: string
           id: string
@@ -134,7 +136,9 @@ export type Database = {
         Insert: {
           availability_status?: string | null
           condition?: string | null
+          contact_email?: string | null
           contact_info?: string
+          contact_phone?: string | null
           created_at?: string
           description: string
           id?: string
@@ -150,7 +154,9 @@ export type Database = {
         Update: {
           availability_status?: string | null
           condition?: string | null
+          contact_email?: string | null
           contact_info?: string
+          contact_phone?: string | null
           created_at?: string
           description?: string
           id?: string

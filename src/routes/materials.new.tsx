@@ -16,6 +16,13 @@ export const Route = createFileRoute("/materials/new")({ component: NewMaterial 
 const CONDITION_OPTIONS = ["Novo", "Seminovo", "Usado"];
 const UNIT_OPTIONS = ["Unidade", "Quilograma", "Metro", "Litro", "Saco"];
 
+const formatPhone = (v: string) => {
+  const digits = v.replace(/\D/g, "");
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+};
+
 function NewMaterial() {
   const { user } = useAuth();
   const nav = useNavigate();
@@ -24,9 +31,10 @@ function NewMaterial() {
     description: "",
     location: "",
     quantity: 1,
-    contact_info: "",
     condition: "Novo",
     unit: "Unidade",
+    contact_phone: "",
+    contact_email: "",
   });
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,6 +51,9 @@ function NewMaterial() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.contact_phone && !form.contact_email) {
+      return toast.error("Informe pelo menos um meio de contato (Telefone ou E-mail).");
+    }
     setLoading(true);
     try {
       const images = files.length ? await uploadImages(user.id, files) : [];
@@ -52,6 +63,7 @@ function NewMaterial() {
         owner_id: user.id,
         images,
         availability_status: "Disponível",
+        contact_info: form.contact_phone || form.contact_email, // Maintain compatibility
       });
       if (error) throw error;
       toast.success("Material publicado! Aguardando aprovação.");
@@ -148,15 +160,30 @@ function NewMaterial() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contact">Contato (e-mail ou telefone)</Label>
-            <Input
-              id="contact"
-              required
-              value={form.contact_info}
-              onChange={(e) => setForm({ ...form, contact_info: e.target.value })}
-              placeholder="Como os interessados podem falar com você?"
-            />
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Meios de Contato (Informe pelo menos um)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone / WhatsApp</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="(00) 00000-0000"
+                  value={form.contact_phone}
+                  onChange={(e) => setForm({ ...form, contact_phone: formatPhone(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={form.contact_email}
+                  onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -56,7 +56,8 @@ function MaterialDetail() {
     description: "",
     location: "",
     quantity: 1,
-    contact_info: "",
+    contact_phone: "",
+    contact_email: "",
     condition: "Novo",
     unit: "Unidade",
   });
@@ -75,7 +76,8 @@ function MaterialDetail() {
             description: data.description || "",
             location: data.location || "",
             quantity: data.quantity || 1,
-            contact_info: data.contact_info || "",
+            contact_phone: data.contact_phone || "",
+            contact_email: data.contact_email || "",
             condition: data.condition || "Novo",
             unit: data.unit || "Unidade",
           });
@@ -192,8 +194,11 @@ function MaterialDetail() {
   };
 
   const saveMaterial = async () => {
-    if (!editForm.name || !editForm.description || !editForm.location || !editForm.contact_info) {
+    if (!editForm.name || !editForm.description || !editForm.location) {
       return toast.error("Preencha os campos obrigatórios.");
+    }
+    if (!editForm.contact_phone && !editForm.contact_email) {
+      return toast.error("Informe pelo menos um meio de contato (Telefone ou E-mail).");
     }
     setEditLoading(true);
     try {
@@ -204,7 +209,9 @@ function MaterialDetail() {
           description: editForm.description,
           location: editForm.location,
           quantity: Number(editForm.quantity),
-          contact_info: editForm.contact_info,
+          contact_phone: editForm.contact_phone,
+          contact_email: editForm.contact_email,
+          contact_info: editForm.contact_phone || editForm.contact_email, // Compatibility
           condition: editForm.condition,
           unit: editForm.unit,
         })
@@ -338,13 +345,36 @@ function MaterialDetail() {
                           onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-contact">Contato Direto *</Label>
-                        <Input
-                          id="edit-contact"
-                          value={editForm.contact_info}
-                          onChange={(e) => setEditForm({ ...editForm, contact_info: e.target.value })}
-                        />
+                      <div className="space-y-4 pt-4 border-t">
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Meios de Contato (Informe pelo menos um)</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-phone">Telefone / WhatsApp</Label>
+                            <Input
+                              id="edit-phone"
+                              type="tel"
+                              placeholder="(00) 00000-0000"
+                              value={editForm.contact_phone}
+                              onChange={(e) => {
+                                const digits = e.target.value.replace(/\D/g, "");
+                                let formatted = digits;
+                                if (digits.length > 2) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+                                if (digits.length > 7) formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+                                setEditForm({ ...editForm, contact_phone: formatted });
+                              }}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-email">E-mail</Label>
+                            <Input
+                              id="edit-email"
+                              type="email"
+                              placeholder="seu@email.com"
+                              value={editForm.contact_email}
+                              onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <DialogFooter>

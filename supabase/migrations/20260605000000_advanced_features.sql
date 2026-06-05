@@ -56,6 +56,8 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS availability text;
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS condition text; -- Novo, Seminovo, Usado
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS unit text; -- Unidade, Quilograma, Metro, Litro, Saco
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS availability_status text DEFAULT 'Disponível'; -- Disponível, Reservado, Doado
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS contact_phone text;
+ALTER TABLE materials ADD COLUMN IF NOT EXISTS contact_email text;
 
 -- Update Material RLS to allow admins
 DROP POLICY IF EXISTS "Owner update materials" ON public.materials;
