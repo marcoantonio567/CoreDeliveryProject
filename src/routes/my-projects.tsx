@@ -9,10 +9,17 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/my-projects")({ component: MyProjects });
 
-const STATUS_LABEL: Record<string, string> = { pending: "Pendente", approved: "Aprovado", rejected: "Reprovado", disabled: "Desabilitado" };
+const STATUS_LABEL: Record<string, string> = { 
+  pending: "Pendente", 
+  approved: "Aprovado", 
+  rejected: "Reprovado", 
+  disabled: "Encerrado" 
+};
 const STATUS_CLASS: Record<string, string> = {
-  pending: "bg-secondary text-secondary-foreground", approved: "bg-primary/15 text-primary",
-  rejected: "bg-destructive/15 text-destructive", disabled: "bg-muted text-muted-foreground",
+  pending: "bg-secondary text-secondary-foreground", 
+  approved: "bg-primary/15 text-primary",
+  rejected: "bg-destructive/15 text-destructive", 
+  disabled: "bg-muted text-muted-foreground",
 };
 
 function MyProjects() {
@@ -52,11 +59,11 @@ function MyProjects() {
   };
   useEffect(() => { load(); }, [user]);
 
-  const remove = async (id: string) => {
-    if (!confirm("Excluir projeto?")) return;
-    const { error } = await supabase.from("projects").delete().eq("id", id);
+  const closeProject = async (id: string) => {
+    if (!confirm("Tem certeza que deseja encerrar este projeto? Uma vez encerrado, ele não poderá ser reaberto.")) return;
+    const { error } = await supabase.from("projects").update({ status: "disabled" }).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Excluído"); load();
+    toast.success("Projeto encerrado"); load();
   };
 
   if (!user) return <div className="min-h-screen flex flex-col"><Header /><main className="flex-1 grid place-items-center"><p>Faça login.</p></main></div>;
@@ -91,8 +98,18 @@ function MyProjects() {
                   {p.rejection_reason && <p className="mt-1 text-xs text-destructive">Motivo: {p.rejection_reason}</p>}
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" asChild><Link to="/projects/$id/edit" params={{ id: p.id }}><Pencil className="h-4 w-4" /></Link></Button>
-                  <Button size="sm" variant="destructive" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                  {p.status !== "disabled" && (
+                    <>
+                      <Button size="sm" variant="outline" asChild>
+                        <Link to="/projects/$id/edit" params={{ id: p.id }}>
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => closeProject(p.id)} title="Encerrar Projeto">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

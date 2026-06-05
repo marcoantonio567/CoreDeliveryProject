@@ -123,7 +123,6 @@ function ProjectDetail() {
   const [editingNeed, setEditingNeed] = useState<any>(null);
   const [deletingNeed, setDeletingNeed] = useState<any>(null);
   const [volunteerMsg, setVolunteerMsg] = useState("");
-  const [donationDesc, setDonationDesc] = useState("");
   const [donationAmt, setDonationAmt] = useState("");
   const [reportReason, setReportReason] = useState("");
   const [volunteers, setVolunteers] = useState<any[]>([]);
@@ -315,21 +314,6 @@ function ProjectDetail() {
     load(true);
   };
 
-  const donate = async () => {
-    if (!user) return toast.error("Faça login.");
-    if (user.id === p.owner_id) return toast.error("Você não pode doar para o seu próprio projeto.");
-    const { error } = await supabase.from("donations").insert({
-      project_id: id,
-      user_id: user.id,
-      description: donationDesc,
-      amount: donationAmt ? Number(donationAmt) : null,
-    });
-    if (error) return toast.error(error.message);
-    toast.success("Doação registrada!");
-    setDonationDesc("");
-    setDonationAmt("");
-  };
-
   const report = async () => {
     if (!user) return toast.error("Faça login.");
     const { error } = await supabase
@@ -408,18 +392,24 @@ function ProjectDetail() {
 
   const submitRequest = async () => {
     if (!user) return toast.error("Faça login.");
+    if (user.id === p.owner_id) return toast.error("Você não pode doar para seu próprio projeto.");
     if (!reqForm.description.trim()) return toast.error("Descreva a necessidade.");
+    const finalDescription = reqForm.request_type === "doacao" && donationAmt 
+      ? `${reqForm.description} (Valor: R$ ${donationAmt})`.trim()
+      : reqForm.description;
+
     const { error } = await supabase.from("project_requests").insert({
       project_id: id,
       user_id: user.id,
       request_type: reqForm.request_type,
-      description: reqForm.description,
+      description: finalDescription,
       quantity: reqForm.quantity ? Number(reqForm.quantity) : null,
       contact_info: reqForm.contact_info,
     });
     if (error) return toast.error(error.message);
     toast.success("Solicitação enviada!");
     setReqForm({ request_type: "material", description: "", quantity: "", contact_info: "" });
+    setDonationAmt("");
     load(true);
   };
 
@@ -593,6 +583,9 @@ function ProjectDetail() {
               {p.completion_status === "completed" && (
                 <Badge className="bg-green-500 hover:bg-green-600">Concluído</Badge>
               )}
+              {p.status === "disabled" && (
+                <Badge variant="secondary" className="bg-muted text-muted-foreground">Encerrado</Badge>
+              )}
             </div>
             <h1 className="text-3xl md:text-4xl font-bold">{p.name}</h1>
             <p className="mt-2 text-muted-foreground flex items-center gap-1.5">
@@ -638,7 +631,11 @@ function ProjectDetail() {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              {user?.id === p.owner_id || isAdmin ? (
+              {p.status === "disabled" ? (
+                <div className="flex-1 bg-muted p-3 rounded-lg border border-dashed text-center text-sm text-muted-foreground font-medium">
+                  Este projeto foi encerrado e não aceita mais edições ou apoios.
+                </div>
+              ) : user?.id === p.owner_id || isAdmin ? (
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="flex-1 gap-2">
@@ -1181,178 +1178,182 @@ function ProjectDetail() {
                   <div className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <h3 className="text-xl font-bold">Painel de Gestão do Proprietário</h3>
-                      <div className="flex flex-wrap gap-2">
-                        <Dialog open={isNeedOpen} onOpenChange={setIsNeedOpen}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" className="gap-2">
-                              <Plus className="h-4 w-4" /> Nova Necessidade
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Adicionar Necessidade</DialogTitle>
-                              <DialogDescription>
-                                Especifique o que o projeto precisa no momento.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label>Tipo *</Label>
-                                <select
-                                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                                  value={newNeed.type}
-                                  onChange={(e) => setNewNeed({ ...newNeed, type: e.target.value })}
-                                >
-                                  {NEED_TYPES.map((t) => (
-                                    <option key={t}>{t}</option>
-                                  ))}
-                                </select>
+                      {p.status === "disabled" ? (
+                        <Badge variant="outline" className="text-muted-foreground border-dashed">Projeto Encerrado</Badge>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          <Dialog open={isNeedOpen} onOpenChange={setIsNeedOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" className="gap-2">
+                                <Plus className="h-4 w-4" /> Nova Necessidade
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Adicionar Necessidade</DialogTitle>
+                                <DialogDescription>
+                                  Especifique o que o projeto precisa no momento.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label>Tipo *</Label>
+                                  <select
+                                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                    value={newNeed.type}
+                                    onChange={(e) => setNewNeed({ ...newNeed, type: e.target.value })}
+                                  >
+                                    {NEED_TYPES.map((t) => (
+                                      <option key={t}>{t}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Descrição *</Label>
+                                  <Input
+                                    value={newNeed.description}
+                                    onChange={(e) => setNewNeed({ ...newNeed, description: e.target.value })}
+                                    placeholder="Ex: 50 sacos de cimento"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Quantidade total necessária *</Label>
+                                  <Input
+                                    type="number"
+                                    value={newNeed.quantity_needed}
+                                    onChange={(e) => setNewNeed({ ...newNeed, quantity_needed: e.target.value })}
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                <Label>Descrição *</Label>
-                                <Input
-                                  value={newNeed.description}
-                                  onChange={(e) => setNewNeed({ ...newNeed, description: e.target.value })}
-                                  placeholder="Ex: 50 sacos de cimento"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Quantidade total necessária *</Label>
-                                <Input
-                                  type="number"
-                                  value={newNeed.quantity_needed}
-                                  onChange={(e) => setNewNeed({ ...newNeed, quantity_needed: e.target.value })}
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsNeedOpen(false)}>Cancelar</Button>
-                              <Button onClick={addNeed}>Cadastrar</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsNeedOpen(false)}>Cancelar</Button>
+                                <Button onClick={addNeed}>Cadastrar</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
 
-                        <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="gap-2">
-                              <History className="h-4 w-4" /> Nova Atualização
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Publicar Atualização</DialogTitle>
-                              <DialogDescription>
-                                Mantenha os apoiadores informados sobre o progresso.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <Label>Descrição da Atualização *</Label>
-                              <Textarea
-                                placeholder="Descreva o que aconteceu no projeto hoje..."
-                                rows={5}
-                                value={newUpdate.description}
-                                onChange={(e) => setNewUpdate({ description: e.target.value })}
-                              />
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsUpdateOpen(false)}>Cancelar</Button>
-                              <Button onClick={addUpdate}>Publicar</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                          <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="outline" className="gap-2">
+                                <History className="h-4 w-4" /> Nova Atualização
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Publicar Atualização</DialogTitle>
+                                <DialogDescription>
+                                  Mantenha os apoiadores informados sobre o progresso.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <Label>Descrição da Atualização *</Label>
+                                <Textarea
+                                  placeholder="Descreva o que aconteceu no projeto hoje..."
+                                  rows={5}
+                                  value={newUpdate.description}
+                                  onChange={(e) => setNewUpdate({ description: e.target.value })}
+                                />
+                              </div>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsUpdateOpen(false)}>Cancelar</Button>
+                                <Button onClick={addUpdate}>Publicar</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
 
-                        <Dialog open={isExpenseOpen} onOpenChange={setIsExpenseOpen}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="secondary" className="gap-2">
-                              <Wallet className="h-4 w-4" /> Registrar Gasto
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Registrar Gasto / Prestação de Contas</DialogTitle>
-                              <DialogDescription>
-                                Registre como os recursos estão sendo utilizados.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label>Data *</Label>
-                                <Input
-                                  type="date"
-                                  value={newExpense.date}
-                                  onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                                />
+                          <Dialog open={isExpenseOpen} onOpenChange={setIsExpenseOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="secondary" className="gap-2">
+                                <Wallet className="h-4 w-4" /> Registrar Gasto
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Registrar Gasto / Prestação de Contas</DialogTitle>
+                                <DialogDescription>
+                                  Registre como os recursos estão sendo utilizados.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label>Data *</Label>
+                                  <Input
+                                    type="date"
+                                    value={newExpense.date}
+                                    onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Descrição do gasto *</Label>
+                                  <Input
+                                    placeholder="Ex: Compra de materiais na loja X"
+                                    value={newExpense.description}
+                                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Valor (R$) *</Label>
+                                  <Input
+                                    type="number"
+                                    value={newExpense.amount}
+                                    onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                <Label>Descrição do gasto *</Label>
-                                <Input
-                                  placeholder="Ex: Compra de materiais na loja X"
-                                  value={newExpense.description}
-                                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Valor (R$) *</Label>
-                                <Input
-                                  type="number"
-                                  value={newExpense.amount}
-                                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsExpenseOpen(false)}>Cancelar</Button>
-                              <Button onClick={addExpense}>Salvar Gasto</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsExpenseOpen(false)}>Cancelar</Button>
+                                <Button onClick={addExpense}>Salvar Gasto</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
 
-                        <Dialog open={isRevenueOpen} onOpenChange={setIsRevenueOpen}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="secondary" className="gap-2 bg-green-600 hover:bg-green-700 text-white">
-                              <TrendingUp className="h-4 w-4" /> Registrar Arrecadação
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Registrar Arrecadação / Doação Recebida</DialogTitle>
-                              <DialogDescription>
-                                Registre valores recebidos fora da plataforma ou doações diretas.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label>Data *</Label>
-                                <Input
-                                  type="date"
-                                  value={newRevenue.date}
-                                  onChange={(e) => setNewRevenue({ ...newRevenue, date: e.target.value })}
-                                />
+                          <Dialog open={isRevenueOpen} onOpenChange={setIsRevenueOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="secondary" className="gap-2 bg-green-600 hover:bg-green-700 text-white">
+                                <TrendingUp className="h-4 w-4" /> Registrar Arrecadação
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Registrar Arrecadação / Doação Recebida</DialogTitle>
+                                <DialogDescription>
+                                  Registre valores recebidos fora da plataforma ou doações diretas.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label>Data *</Label>
+                                  <Input
+                                    type="date"
+                                    value={newRevenue.date}
+                                    onChange={(e) => setNewRevenue({ ...newRevenue, date: e.target.value })}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Descrição / Origem *</Label>
+                                  <Input
+                                    placeholder="Ex: Doação em dinheiro de vizinho"
+                                    value={newRevenue.description}
+                                    onChange={(e) => setNewRevenue({ ...newRevenue, description: e.target.value })}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Valor (R$) *</Label>
+                                  <Input
+                                    type="number"
+                                    value={newRevenue.amount}
+                                    onChange={(e) => setNewRevenue({ ...newRevenue, amount: e.target.value })}
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                <Label>Descrição / Origem *</Label>
-                                <Input
-                                  placeholder="Ex: Doação em dinheiro de vizinho"
-                                  value={newRevenue.description}
-                                  onChange={(e) => setNewRevenue({ ...newRevenue, description: e.target.value })}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Valor (R$) *</Label>
-                                <Input
-                                  type="number"
-                                  value={newRevenue.amount}
-                                  onChange={(e) => setNewRevenue({ ...newRevenue, amount: e.target.value })}
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsRevenueOpen(false)}>Cancelar</Button>
-                              <Button onClick={addRevenue}>Salvar Arrecadação</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsRevenueOpen(false)}>Cancelar</Button>
+                                <Button onClick={addRevenue}>Salvar Arrecadação</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1435,11 +1436,17 @@ function ProjectDetail() {
               <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <h3 className="font-bold text-lg mb-4">Como você quer ajudar?</h3>
                 
-                <Tabs defaultValue="volunteer">
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="volunteer">Trabalho</TabsTrigger>
-                    <TabsTrigger value="donate">Recursos</TabsTrigger>
-                  </TabsList>
+                {p.status === "disabled" ? (
+                  <div className="bg-muted text-muted-foreground p-6 rounded-xl text-center font-medium text-sm border border-dashed">
+                    Este projeto foi encerrado pelo proprietário e não está mais aceitando novas ofertas de ajuda ou voluntariado.
+                  </div>
+                ) : (
+                  <Tabs defaultValue="volunteer">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="volunteer">Trabalho</TabsTrigger>
+                      <TabsTrigger value="donate">Recursos</TabsTrigger>
+                    </TabsList>
+                    {/* ... TabsContent will be inside here ... */}
 
                   <TabsContent value="volunteer" className="space-y-4">
                     <p className="text-sm text-muted-foreground">Ofereça seu tempo e habilidades para ajudar na execução desta melhoria.</p>
@@ -1532,91 +1539,98 @@ function ProjectDetail() {
 
                   <TabsContent value="donate" className="space-y-4">
                     <p className="text-sm text-muted-foreground">Doe materiais, frete ou recursos financeiros para o projeto.</p>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs">Tipo de oferta</Label>
-                        <select
-                          className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                          value={reqForm.request_type}
-                          onChange={(e) => setReqForm({ ...reqForm, request_type: e.target.value })}
-                        >
-                          <option value="material">Material / Insumos</option>
-                          <option value="frete">Ajuda de custo / Frete</option>
-                          <option value="doacao">Doação Financeira</option>
-                        </select>
+                    {user?.id === p.owner_id ? (
+                      <div className="bg-muted text-muted-foreground p-4 rounded-xl text-center font-medium text-sm border border-dashed">
+                        Você é o proprietário deste projeto.
                       </div>
-                      <div>
-                        <Label className="text-xs">Descrição da oferta</Label>
-                        <Textarea
-                          placeholder="O que você está oferecendo?"
-                          rows={3}
-                          value={reqForm.description}
-                          onChange={(e) => setReqForm({ ...reqForm, description: e.target.value })}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
+                    ) : (
+                      <div className="space-y-3">
                         <div>
-                          <Label className="text-xs">Qtd (opcional)</Label>
-                          <Input
-                            type="number"
-                            placeholder="Ex: 50"
-                            value={reqForm.quantity}
-                            onChange={(e) => setReqForm({ ...reqForm, quantity: e.target.value })}
-                          />
+                          <Label className="text-xs">Tipo de oferta</Label>
+                          <select
+                            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                            value={reqForm.request_type}
+                            onChange={(e) => setReqForm({ ...reqForm, request_type: e.target.value })}
+                          >
+                            <option value="material">Material / Insumos</option>
+                            <option value="frete">Ajuda de custo / Frete</option>
+                            <option value="doacao">Doação Financeira</option>
+                          </select>
                         </div>
                         <div>
-                          <Label className="text-xs">Valor (R$)</Label>
-                          <Input
-                            type="number"
-                            placeholder="0,00"
-                            value={donationAmt}
-                            onChange={(e) => setDonationAmt(e.target.value)}
+                          <Label className="text-xs">Descrição da oferta</Label>
+                          <Textarea
+                            placeholder="O que você está oferecendo?"
+                            rows={3}
+                            value={reqForm.description}
+                            onChange={(e) => setReqForm({ ...reqForm, description: e.target.value })}
                           />
                         </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Qtd (opcional)</Label>
+                            <Input
+                              type="number"
+                              placeholder="Ex: 50"
+                              value={reqForm.quantity}
+                              onChange={(e) => setReqForm({ ...reqForm, quantity: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Valor (R$)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0,00"
+                              value={donationAmt}
+                              onChange={(e) => setDonationAmt(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Seu contato (e-mail/telefone)</Label>
+                          <Input
+                            placeholder="Como o dono do projeto te acha?"
+                            value={reqForm.contact_info}
+                            onChange={(e) => setReqForm({ ...reqForm, contact_info: e.target.value })}
+                          />
+                        </div>
+                        <Button onClick={submitRequest} className="w-full" variant="secondary">
+                          Enviar Oferta de Ajuda
+                        </Button>
                       </div>
-                      <div>
-                        <Label className="text-xs">Seu contato (e-mail/telefone)</Label>
-                        <Input
-                          placeholder="Como o dono do projeto te acha?"
-                          value={reqForm.contact_info}
-                          onChange={(e) => setReqForm({ ...reqForm, contact_info: e.target.value })}
-                        />
-                      </div>
-                      <Button onClick={submitRequest} className="w-full" variant="secondary">
-                        Enviar Oferta de Ajuda
-                      </Button>
-                    </div>
+                    )}
                   </TabsContent>
                 </Tabs>
-              </div>
-
-              {/* PIX Card (if available) */}
-              {ownerPix && (
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                  <h3 className="font-bold flex items-center gap-2 mb-4">
-                    <QrCode className="h-5 w-5 text-primary" /> Doação Direta (PIX)
-                  </h3>
-                  <div className="flex flex-col items-center">
-                    <div className="p-2 bg-white rounded-xl border border-border mb-4">
-                      <QRCodeSVG value={buildPixPayload(ownerPix.pix_key)} size={140} />
-                    </div>
-                    <p className="text-xs text-center text-muted-foreground mb-4">
-                      O valor vai direto para a conta do responsável pelo projeto.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2"
-                      onClick={() => {
-                        navigator.clipboard.writeText(ownerPix.pix_key);
-                        toast.success("Chave PIX copiada!");
-                      }}
-                    >
-                      <Copy className="h-4 w-4" /> Copiar Chave PIX
-                    </Button>
-                  </div>
-                </div>
               )}
+            </div>
+
+            {/* PIX Card (if available) */}
+            {ownerPix && p.status !== "disabled" && (
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <h3 className="font-bold flex items-center gap-2 mb-4">
+                  <QrCode className="h-5 w-5 text-primary" /> Doação Direta (PIX)
+                </h3>
+                <div className="flex flex-col items-center">
+                  <div className="p-2 bg-white rounded-xl border border-border mb-4">
+                    <QRCodeSVG value={buildPixPayload(ownerPix.pix_key)} size={140} />
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground mb-4">
+                    O valor vai direto para a conta do responsável pelo projeto.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => {
+                      navigator.clipboard.writeText(ownerPix.pix_key);
+                      toast.success("Chave PIX copiada!");
+                    }}
+                  >
+                    <Copy className="h-4 w-4" /> Copiar Chave PIX
+                  </Button>
+                </div>
+              </div>
+            )}
 
               {/* Report Card */}
               <div className="rounded-2xl border border-border bg-muted/50 p-6">
