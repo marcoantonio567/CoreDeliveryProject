@@ -18,6 +18,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import {
@@ -36,6 +46,7 @@ import {
   Plus,
   QrCode,
   Sparkles,
+  Trash2,
   TrendingUp,
   Users,
   Wallet,
@@ -91,8 +102,12 @@ function ProjectDetail() {
   const [isNeedOpen, setIsNeedOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isEditNeedOpen, setIsEditNeedOpen] = useState(false);
+  const [isDeleteNeedOpen, setIsDeleteNeedOpen] = useState(false);
 
   const [editForm, setEditForm] = useState<any>(null);
+  const [editingNeed, setEditingNeed] = useState<any>(null);
+  const [deletingNeed, setDeletingNeed] = useState<any>(null);
   const [volunteerMsg, setVolunteerMsg] = useState("");
   const [donationDesc, setDonationDesc] = useState("");
   const [donationAmt, setDonationAmt] = useState("");
@@ -116,8 +131,8 @@ function ProjectDetail() {
   });
   const [ownerPix, setOwnerPix] = useState<{ pix_key: string; pix_key_type: string } | null>(null);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
       setP(data);
@@ -300,7 +315,7 @@ function ProjectDetail() {
     if (error) return toast.error(error.message);
     toast.success("Projeto atualizado!");
     setIsEditOpen(false);
-    load();
+    load(true);
   };
 
   const requestCompletion = async () => {
@@ -310,7 +325,7 @@ function ProjectDetail() {
       .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Conclusão solicitada para revisão do administrador.");
-    load();
+    load(true);
   };
 
   const submitRequest = async () => {
@@ -327,11 +342,13 @@ function ProjectDetail() {
     if (error) return toast.error(error.message);
     toast.success("Solicitação enviada!");
     setReqForm({ request_type: "material", description: "", quantity: "", contact_info: "" });
-    load();
+    load(true);
   };
 
   const addNeed = async () => {
-    if (!newNeed.description) return toast.error("Informe a descrição.");
+    if (!newNeed.description || !newNeed.quantity_needed) {
+      return toast.error("Por favor, preencha todos os campos da necessidade.");
+    }
     const { error } = await supabase.from("project_needs").insert({
       project_id: id,
       type: newNeed.type,
@@ -342,7 +359,35 @@ function ProjectDetail() {
     toast.success("Necessidade adicionada!");
     setNewNeed({ type: "Material", description: "", quantity_needed: "" });
     setIsNeedOpen(false);
-    load();
+    load(true);
+  };
+
+  const updateNeed = async () => {
+    if (!editingNeed.description || !editingNeed.quantity_needed) {
+      return toast.error("Por favor, preencha todos os campos da necessidade.");
+    }
+    const { error } = await supabase
+      .from("project_needs")
+      .update({
+        type: editingNeed.type,
+        description: editingNeed.description,
+        quantity_needed: Number(editingNeed.quantity_needed),
+      })
+      .eq("id", editingNeed.id);
+
+    if (error) return toast.error(error.message);
+    toast.success("Necessidade atualizada!");
+    setIsEditNeedOpen(false);
+    load(true);
+  };
+
+  const deleteNeed = async () => {
+    if (!deletingNeed) return;
+    const { error } = await supabase.from("project_needs").delete().eq("id", deletingNeed.id);
+    if (error) return toast.error(error.message);
+    toast.success("Necessidade excluída!");
+    setIsDeleteNeedOpen(false);
+    load(true);
   };
 
   const updateNeedProgress = async (needId: string, met: number, total: number) => {
@@ -352,12 +397,16 @@ function ProjectDetail() {
       .update({ quantity_met: met, status })
       .eq("id", needId);
     if (error) return toast.error(error.message);
+    
+    // Update local state instead of calling load() to avoid full page reload/flicker
+    setNeeds((prev) =>
+      prev.map((n) => (n.id === needId ? { ...n, quantity_met: met, status } : n)),
+    );
     toast.success("Progresso atualizado!");
-    load();
   };
 
   const addUpdate = async () => {
-    if (!newUpdate.description) return toast.error("Informe a descrição.");
+    if (!newUpdate.description) return toast.error("Informe a descrição da atualização.");
     const { error } = await supabase
       .from("project_updates")
       .insert({ project_id: id, description: newUpdate.description });
@@ -365,11 +414,13 @@ function ProjectDetail() {
     toast.success("Atualização publicada!");
     setNewUpdate({ description: "" });
     setIsUpdateOpen(false);
-    load();
+    load(true);
   };
 
   const addExpense = async () => {
-    if (!newExpense.description || !newExpense.amount) return toast.error("Preencha os campos.");
+    if (!newExpense.description || !newExpense.amount || !newExpense.date) {
+      return toast.error("Preencha todos os campos do gasto.");
+    }
     const { error } = await supabase.from("project_expenses").insert({
       project_id: id,
       description: newExpense.description,
@@ -384,14 +435,14 @@ function ProjectDetail() {
       date: new Date().toISOString().split("T")[0],
     });
     setIsExpenseOpen(false);
-    load();
+    load(true);
   };
 
   const updateVolunteerStatus = async (vId: string, status: string) => {
     const { error } = await supabase.from("volunteer_requests").update({ status }).eq("id", vId);
     if (error) return toast.error(error.message);
     toast.success("Status do voluntário atualizado!");
-    load();
+    load(true);
   };
 
   return (
@@ -846,12 +897,40 @@ function ProjectDetail() {
                             <Badge className="mb-2">{n.type}</Badge>
                             <h4 className="font-bold text-lg">{n.description}</h4>
                           </div>
-                          <Badge
-                            variant={n.status === "Atendida" ? "default" : "secondary"}
-                            className={n.status === "Atendida" ? "bg-green-500" : ""}
-                          >
-                            {n.status}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-2">
+                            <Badge
+                              variant={n.status === "Atendida" ? "default" : "secondary"}
+                              className={n.status === "Atendida" ? "bg-green-500" : ""}
+                            >
+                              {n.status}
+                            </Badge>
+                            {(user?.id === p.owner_id || isAdmin) && (
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                  onClick={() => {
+                                    setEditingNeed(n);
+                                    setIsEditNeedOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  onClick={() => {
+                                    setDeletingNeed(n);
+                                    setIsDeleteNeedOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         {n.quantity_needed > 0 && (
                           <div className="space-y-2">
@@ -988,7 +1067,7 @@ function ProjectDetail() {
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                               <div className="space-y-2">
-                                <Label>Tipo</Label>
+                                <Label>Tipo *</Label>
                                 <select
                                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                                   value={newNeed.type}
@@ -1000,7 +1079,7 @@ function ProjectDetail() {
                                 </select>
                               </div>
                               <div className="space-y-2">
-                                <Label>Descrição</Label>
+                                <Label>Descrição *</Label>
                                 <Input
                                   value={newNeed.description}
                                   onChange={(e) => setNewNeed({ ...newNeed, description: e.target.value })}
@@ -1008,7 +1087,7 @@ function ProjectDetail() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Quantidade total necessária</Label>
+                                <Label>Quantidade total necessária *</Label>
                                 <Input
                                   type="number"
                                   value={newNeed.quantity_needed}
@@ -1037,6 +1116,7 @@ function ProjectDetail() {
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
+                              <Label>Descrição da Atualização *</Label>
                               <Textarea
                                 placeholder="Descreva o que aconteceu no projeto hoje..."
                                 rows={5}
@@ -1066,7 +1146,7 @@ function ProjectDetail() {
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                               <div className="space-y-2">
-                                <Label>Data</Label>
+                                <Label>Data *</Label>
                                 <Input
                                   type="date"
                                   value={newExpense.date}
@@ -1074,7 +1154,7 @@ function ProjectDetail() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Descrição do gasto</Label>
+                                <Label>Descrição do gasto *</Label>
                                 <Input
                                   placeholder="Ex: Compra de materiais na loja X"
                                   value={newExpense.description}
@@ -1082,7 +1162,7 @@ function ProjectDetail() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Valor (R$)</Label>
+                                <Label>Valor (R$) *</Label>
                                 <Input
                                   type="number"
                                   value={newExpense.amount}
@@ -1271,6 +1351,72 @@ function ProjectDetail() {
             </div>
           </div>
         </div>
+
+        {/* Edit Need Dialog */}
+        <Dialog open={isEditNeedOpen} onOpenChange={setIsEditNeedOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Necessidade</DialogTitle>
+              <DialogDescription>
+                Atualize as informações da necessidade do projeto.
+              </DialogDescription>
+            </DialogHeader>
+            {editingNeed && (
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Tipo *</Label>
+                  <select
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={editingNeed.type}
+                    onChange={(e) => setEditingNeed({ ...editingNeed, type: e.target.value })}
+                  >
+                    {NEED_TYPES.map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Descrição *</Label>
+                  <Input
+                    value={editingNeed.description}
+                    onChange={(e) => setEditingNeed({ ...editingNeed, description: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantidade total necessária *</Label>
+                  <Input
+                    type="number"
+                    value={editingNeed.quantity_needed}
+                    onChange={(e) => setEditingNeed({ ...editingNeed, quantity_needed: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditNeedOpen(false)}>Cancelar</Button>
+              <Button onClick={updateNeed}>Salvar Alterações</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Need Confirmation */}
+        <AlertDialog open={isDeleteNeedOpen} onOpenChange={setIsDeleteNeedOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. Isso excluirá permanentemente a necessidade
+                "{deletingNeed?.description}" do projeto.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteNeed} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
