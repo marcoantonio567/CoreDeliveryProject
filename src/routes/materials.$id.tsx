@@ -9,6 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { HandHeart, MapPin, Package, Truck, CheckCircle2, Info } from "lucide-react";
 
 export const Route = createFileRoute("/materials/$id")({ component: MaterialDetail });
@@ -19,6 +29,8 @@ function MaterialDetail() {
   const [m, setM] = useState<any>(null);
   const [requests, setRequests] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     quantity: "",
@@ -127,14 +139,22 @@ function MaterialDetail() {
     loadRequests();
   };
 
-  const updateAvailability = async (status: string) => {
+  const updateAvailability = async () => {
+    if (!pendingStatus) return;
     const { error } = await supabase
       .from("materials")
-      .update({ availability_status: status })
+      .update({ availability_status: pendingStatus })
       .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Status atualizado!");
+    setIsConfirmOpen(false);
+    setPendingStatus(null);
     loadMaterial();
+  };
+
+  const confirmStatusChange = (status: string) => {
+    setPendingStatus(status);
+    setIsConfirmOpen(true);
   };
 
   return (
@@ -218,21 +238,21 @@ function MaterialDetail() {
                   <Button
                     size="sm"
                     variant={m.availability_status === "Disponível" ? "default" : "outline"}
-                    onClick={() => updateAvailability("Disponível")}
+                    onClick={() => confirmStatusChange("Disponível")}
                   >
                     Disponível
                   </Button>
                   <Button
                     size="sm"
                     variant={m.availability_status === "Reservado" ? "default" : "outline"}
-                    onClick={() => updateAvailability("Reservado")}
+                    onClick={() => confirmStatusChange("Reservado")}
                   >
                     Reservado
                   </Button>
                   <Button
                     size="sm"
                     variant={m.availability_status === "Doado" ? "default" : "outline"}
-                    onClick={() => updateAvailability("Doado")}
+                    onClick={() => confirmStatusChange("Doado")}
                   >
                     Já Doado
                   </Button>
@@ -363,6 +383,21 @@ function MaterialDetail() {
             )}
           </div>
         )}
+
+        <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar alteração de status</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você tem certeza que deseja alterar o status deste material para "{pendingStatus}"?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPendingStatus(null)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={updateAvailability}>Confirmar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

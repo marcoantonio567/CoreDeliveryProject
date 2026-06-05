@@ -31,11 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(s?.user ?? null);
       setTimeout(() => checkRole(s?.user?.id), 0);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      checkRole(data.session?.user?.id).finally(() => setLoading(false));
-    });
+
+    const init = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        await checkRole(data.session?.user?.id);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    init();
     return () => sub.subscription.unsubscribe();
   }, []);
 
