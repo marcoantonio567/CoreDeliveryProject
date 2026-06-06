@@ -94,13 +94,11 @@ function MyRequests() {
             {requests.map((r) => (
               <div key={r.id} className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex flex-col md:flex-row gap-6">
-                  <div className="w-full md:w-48 h-32 rounded-xl overflow-hidden bg-muted shrink-0">
+                  <div className="h-20 w-20 rounded-lg overflow-hidden border border-border bg-muted/30 flex items-center justify-center shrink-0">
                     {r.materials?.images?.[0] ? (
-                      <img src={r.materials.images[0]} alt="" className="w-full h-full object-cover" />
+                      <img src={r.materials.images[0]} alt="" className="max-w-full max-h-full object-contain" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <Package className="h-8 w-8" />
-                      </div>
+                      <Package className="h-6 w-6 text-muted-foreground" />
                     )}
                   </div>
                   

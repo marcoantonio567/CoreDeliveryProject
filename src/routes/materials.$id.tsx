@@ -278,9 +278,9 @@ function MaterialDetail() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Column: Images */}
           <div className="space-y-4">
-            <div className="rounded-2xl overflow-hidden border border-border bg-muted aspect-video">
+            <div className="rounded-2xl overflow-hidden border border-border bg-muted/50 aspect-video flex items-center justify-center">
               {m.images?.[0] ? (
-                <img src={m.images[0]} alt="" className="w-full h-full object-cover" />
+                <img src={m.images[0]} alt="" className="max-w-full max-h-full object-contain" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                   <Package className="h-12 w-12" />
@@ -289,12 +289,14 @@ function MaterialDetail() {
             </div>
             <div className="grid grid-cols-4 gap-2">
               {m.images?.slice(1, 5).map((u: string, i: number) => (
-                <img
-                  key={i}
-                  src={u}
-                  alt=""
-                  className="aspect-square rounded-xl object-cover border border-border"
-                />
+                <div key={i} className="aspect-square rounded-xl overflow-hidden border border-border bg-muted/30 flex items-center justify-center">
+                  <img
+                    key={i}
+                    src={u}
+                    alt=""
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
               ))}
             </div>
           </div>

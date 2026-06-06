@@ -6,28 +6,49 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, MapPin, Package, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export const Route = createFileRoute("/materials/")({ component: Materials });
+
+const PAGE_SIZE = 6;
 
 function Materials() {
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     setLoading(true);
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
     let query = supabase
       .from("materials")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("status", "approved")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
     if (q) query = query.ilike("name", `%${q}%`);
-    query.then(({ data }) => {
+
+    query.then(({ data, count }) => {
       setItems(data || []);
+      setTotalCount(count || 0);
       setLoading(false);
     });
-  }, [q]);
+  }, [q, page]);
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -40,7 +61,15 @@ function Materials() {
           </div>
           {user && <Button asChild><Link to="/materials/new"><Plus className="h-4 w-4 mr-1" />Doar material</Link></Button>}
         </div>
-        <Input placeholder="Pesquisar..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-md mb-6" />
+        <Input 
+          placeholder="Pesquisar..." 
+          value={q} 
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }} 
+          className="max-w-md mb-6" 
+        />
         
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
@@ -48,24 +77,82 @@ function Materials() {
             <p>Carregando materiais...</p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((m) => (
-              <Link key={m.id} to="/materials/$id" params={{ id: m.id }} className="group rounded-xl overflow-hidden border border-border bg-card hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-muted overflow-hidden">
-                  {m.images[0] ? <img src={m.images[0]} alt={m.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full grid place-items-center"><Package className="h-10 w-10 text-muted-foreground" /></div>}
+          <>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-10">
+              {items.map((m) => (
+                <Link key={m.id} to="/materials/$id" params={{ id: m.id }} className="group rounded-xl overflow-hidden border border-border bg-card hover:shadow-lg transition-shadow">
+                  <div className="aspect-video bg-muted/50 overflow-hidden flex items-center justify-center">
+                  {m.images[0] ? (
+                    <img 
+                      src={m.images[0]} 
+                      alt={m.name} 
+                      className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" 
+                      loading="lazy" 
+                    />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center">
+                      <Package className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
-                <div className="p-5">
-                  <h3 className="text-lg font-semibold">{m.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{m.description}</p>
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</span>
-                    <span>Qtd: {m.quantity}</span>
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold">{m.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{m.description}</p>
+                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{m.location}</span>
+                      <span>Qtd: {m.quantity}</span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-            {items.length === 0 && <p className="text-muted-foreground">Nenhum material disponível.</p>}
-          </div>
+                </Link>
+              ))}
+              {items.length === 0 && <p className="text-muted-foreground">Nenhum material disponível.</p>}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-10">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (page > 1) setPage(page - 1);
+                        }}
+                        className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                      <PaginationItem key={p}>
+                        <PaginationLink 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(p);
+                          }}
+                          isActive={page === p}
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (page < totalPages) setPage(page + 1);
+                        }}
+                        className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

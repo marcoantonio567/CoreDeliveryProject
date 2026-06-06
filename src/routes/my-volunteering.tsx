@@ -105,13 +105,11 @@ function MyVolunteering() {
             {applications.map((v) => (
               <div key={v.id} className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex flex-col md:flex-row gap-6">
-                  <div className="w-full md:w-48 h-32 rounded-xl overflow-hidden bg-muted shrink-0">
+                  <div className="w-full md:w-48 h-32 rounded-xl overflow-hidden border border-border bg-muted/30 flex items-center justify-center shrink-0">
                     {v.projects?.images?.[0] ? (
-                      <img src={v.projects.images[0]} alt="" className="w-full h-full object-cover" />
+                      <img src={v.projects.images[0]} alt="" className="max-w-full max-h-full object-contain" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <HandHeart className="h-8 w-8" />
-                      </div>
+                      <HandHeart className="h-8 w-8 text-muted-foreground" />
                     )}
                   </div>
                   

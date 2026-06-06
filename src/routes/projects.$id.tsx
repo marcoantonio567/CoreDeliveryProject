@@ -558,9 +558,9 @@ function ProjectDetail() {
         {/* Top Section: Images and Title */}
         <div className="grid md:grid-cols-2 gap-4 mb-8">
           <div className="space-y-4">
-            <div className="aspect-video rounded-xl overflow-hidden border border-border bg-muted">
+            <div className="aspect-video rounded-xl overflow-hidden border border-border bg-muted/50 flex items-center justify-center">
               {p.images?.[0] ? (
-                <img src={p.images[0]} alt="" className="w-full h-full object-cover" />
+                <img src={p.images[0]} alt="" className="max-w-full max-h-full object-contain" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                   Sem imagens
@@ -569,12 +569,13 @@ function ProjectDetail() {
             </div>
             <div className="grid grid-cols-4 gap-2">
               {p.images?.slice(1, 5).map((u: string, i: number) => (
-                <img
-                  key={i}
-                  src={u}
-                  alt=""
-                  className="aspect-square rounded-lg object-cover border border-border"
-                />
+                <div key={i} className="aspect-square rounded-lg overflow-hidden border border-border bg-muted/30 flex items-center justify-center">
+                  <img
+                    src={u}
+                    alt=""
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
               ))}
             </div>
           </div>

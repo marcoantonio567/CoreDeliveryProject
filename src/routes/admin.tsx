@@ -156,7 +156,11 @@ function Admin() {
         </div>
         {p.images?.length > 0 && (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-            {p.images.map((u: string) => <img key={u} src={u} alt="" className="aspect-video w-full object-cover rounded" />)}
+            {p.images.map((u: string) => (
+              <div key={u} className="aspect-video w-full rounded overflow-hidden border border-border bg-muted/30 flex items-center justify-center">
+                <img src={u} alt="" className="max-w-full max-h-full object-contain" />
+              </div>
+            ))}
           </div>
         )}
         <div className="mt-3 flex gap-2">
@@ -191,7 +195,11 @@ function Admin() {
         </div>
         {m.images?.length > 0 && (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-            {m.images.map((u: string) => <img key={u} src={u} alt="" className="aspect-video w-full object-cover rounded" />)}
+            {m.images.map((u: string) => (
+              <div key={u} className="aspect-video w-full rounded overflow-hidden border border-border bg-muted/30 flex items-center justify-center">
+                <img src={u} alt="" className="max-w-full max-h-full object-contain" />
+              </div>
+            ))}
           </div>
         )}
         <div className="mt-3 flex gap-2">
