@@ -18,8 +18,26 @@ const BR_PHONE_REGEX = /^\(\d{2}\) \d{5}-\d{4}$/;
 function applyPhoneMask(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 2) return digits.length ? `(${digits}` : "";
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function applyCpfMask(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function applyCnpjMask(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  return digits
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 }
 
 const PIX_TYPES = [
@@ -105,7 +123,7 @@ function Profile() {
         setProfile(data);
         setName(data.display_name || "");
         setBirthDate(data.birth_date || "");
-        setPhone(data.phone || "");
+        setPhone(data.phone ? applyPhoneMask(data.phone) : "");
         setZip(data.address_zip || "");
         setStreet(data.address_street || "");
         setNumber(data.address_number || "");
@@ -114,7 +132,12 @@ function Profile() {
         setCity(data.address_city || "");
         setState(data.address_state || "");
         setPixType(data.pix_key_type || "");
-        setPixKey(data.pix_key || "");
+        
+        let initialPix = data.pix_key || "";
+        if (data.pix_key_type === "cpf") initialPix = applyCpfMask(initialPix);
+        else if (data.pix_key_type === "cnpj") initialPix = applyCnpjMask(initialPix);
+        else if (data.pix_key_type === "phone") initialPix = applyPhoneMask(initialPix);
+        setPixKey(initialPix);
         // New professional fields
         setProfession(data.profession || "");
         setSpecialty(data.specialty || "");
@@ -209,6 +232,23 @@ function Profile() {
     if (pixKey && !pixType) {
       return toast.error("Selecione o tipo da chave PIX.");
     }
+    
+    if (pixKey) {
+      const digits = pixKey.replace(/\D/g, "");
+      if (pixType === "cpf" && digits.length !== 11) {
+        return toast.error("CPF deve ter 11 dígitos.");
+      }
+      if (pixType === "cnpj" && digits.length !== 14) {
+        return toast.error("CNPJ deve ter 14 dígitos.");
+      }
+      if (pixType === "phone" && digits.length !== 11) {
+        return toast.error("Telefone deve ter 11 dígitos (incluindo DDD).");
+      }
+      if (pixType === "email" && !pixKey.includes("@")) {
+        return toast.error("E-mail inválido.");
+      }
+    }
+
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -462,7 +502,10 @@ function Profile() {
                 <select
                   id="pixType"
                   value={pixType}
-                  onChange={(e) => setPixType(e.target.value)}
+                  onChange={(e) => {
+                    setPixType(e.target.value);
+                    setPixKey(""); // Clear key when type changes to avoid invalid formats
+                  }}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="">Selecione</option>
@@ -491,7 +534,13 @@ function Profile() {
                               : "Selecione o tipo acima"
                   }
                   value={pixKey}
-                  onChange={(e) => setPixKey(e.target.value)}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (pixType === "cpf") val = applyCpfMask(val);
+                    else if (pixType === "cnpj") val = applyCnpjMask(val);
+                    else if (pixType === "phone") val = applyPhoneMask(val);
+                    setPixKey(val);
+                  }}
                 />
               </div>
               <Button onClick={savePix}>Salvar PIX</Button>

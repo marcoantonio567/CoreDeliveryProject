@@ -398,6 +398,7 @@ function ProjectDetail() {
     if (!user) return toast.error("Faça login.");
     if (user.id === p.owner_id) return toast.error("Você não pode doar para seu próprio projeto.");
     if (!reqForm.description.trim()) return toast.error("Descreva a necessidade.");
+    if (!reqForm.contact_info.trim()) return toast.error("Informe seu contato para que o dono do projeto te ache.");
     const finalDescription = reqForm.request_type === "doacao" && donationAmt 
       ? `${reqForm.description} (Valor: R$ ${donationAmt})`.trim()
       : reqForm.description;
@@ -1694,7 +1695,7 @@ function ProjectDetail() {
                           </div>
                         </div>
                         <div>
-                          <Label className="text-xs">Seu contato (e-mail/telefone)</Label>
+                          <Label className="text-xs">Seu contato (e-mail/telefone) *</Label>
                           <Input
                             placeholder="Como o dono do projeto te acha?"
                             value={reqForm.contact_info}
