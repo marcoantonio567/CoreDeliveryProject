@@ -19,6 +19,9 @@ export default defineConfig({
       preset: "vercel",
     }) : null,
   ].filter(Boolean),
+  ssr: {
+    noExternal: ["tslib"],
+  },
   build: {
     target: "esnext",
   },
