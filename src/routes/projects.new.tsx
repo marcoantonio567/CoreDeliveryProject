@@ -53,9 +53,22 @@ function NewProject() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (files.length === 0) {
-      return toast.error("Por favor, adicione pelo menos uma imagem do local.");
-    }
+
+    // Manual validation for all required fields (even in inactive tabs)
+    if (!form.name.trim()) return toast.error("Preencha o nome do projeto.");
+    if (!form.description.trim()) return toast.error("Preencha a descrição detalhada.");
+    if (!form.location.trim()) return toast.error("Preencha a localização.");
+    if (files.length === 0) return toast.error("Adicione pelo menos uma imagem do local.");
+    
+    if (!form.beneficiary_name.trim()) return toast.error("Preencha o nome do responsável pela residência.");
+    if (!form.beneficiary_situation.trim()) return toast.error("Preencha o relato da situação habitacional.");
+    if (!form.beneficiary_vulnerability.trim()) return toast.error("Preencha o nível de vulnerabilidade social.");
+    
+    if (form.estimated_cost <= 0) return toast.error("O valor estimado da obra deve ser maior que zero.");
+    if (form.financial_goal <= 0) return toast.error("A meta de arrecadação deve ser maior que zero.");
+    if (!form.start_date) return toast.error("Informe a data prevista de início.");
+    if (!form.end_date) return toast.error("Informe a data prevista de término.");
+
     setLoading(true);
     try {
       const images = files.length ? await uploadImages(user.id, files) : [];
@@ -105,7 +118,7 @@ function NewProject() {
 
             <TabsContent value="basic" className="space-y-4 mt-6 rounded-xl border border-border bg-card p-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome do Projeto</Label>
+                <Label htmlFor="name">Nome do Projeto *</Label>
                 <Input
                   id="name"
                   required
@@ -115,7 +128,7 @@ function NewProject() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="desc">Descrição detalhada</Label>
+                <Label htmlFor="desc">Descrição detalhada *</Label>
                 <Textarea
                   id="desc"
                   required
@@ -152,7 +165,7 @@ function NewProject() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="loc">Localização (Bairro/Cidade)</Label>
+                <Label htmlFor="loc">Localização (Bairro/Cidade) *</Label>
                 <Input
                   id="loc"
                   required
