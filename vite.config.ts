@@ -14,12 +14,4 @@ export default defineConfig({
       entry: "server",
     },
   },
-  nitro: {
-    preset: "vercel",
-  },
-  vite: {
-    build: {
-      outDir: "dist",
-    }
-  }
 });
