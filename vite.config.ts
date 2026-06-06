@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -8,17 +7,19 @@ import { nitro } from "nitro/vite";
 
 export default defineConfig({
   plugins: [
-    tanstackRouter(),
-    viteReact(),
-    tailwindcss(),
-    tsConfigPaths(),
     tanstackStart({
       server: {
         entry: "src/server.ts",
       },
     }),
-    nitro({
+    viteReact(),
+    tailwindcss(),
+    tsConfigPaths(),
+    process.env.NODE_ENV === "production" ? nitro({
       preset: "vercel",
-    }),
-  ],
+    }) : null,
+  ].filter(Boolean),
+  build: {
+    target: "esnext",
+  },
 });
