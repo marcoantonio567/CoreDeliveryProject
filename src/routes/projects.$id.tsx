@@ -43,6 +43,7 @@ import {
   Info,
   Mail,
   MapPin,
+  Package,
   Pencil,
   Phone,
   Plus,
@@ -50,6 +51,7 @@ import {
   Sparkles,
   Trash2,
   TrendingUp,
+  Truck,
   Users,
   Wallet,
   X,
@@ -125,6 +127,8 @@ function ProjectDetail() {
   const [volunteerMsg, setVolunteerMsg] = useState("");
   const [donationAmt, setDonationAmt] = useState("");
   const [reportReason, setReportReason] = useState("");
+  const [rejectingRequest, setRejectingRequest] = useState<any>(null);
+  const [requestRejectionReason, setRequestRejectionReason] = useState("");
   const [volunteers, setVolunteers] = useState<any[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -526,6 +530,16 @@ function ProjectDetail() {
       date: new Date().toISOString().split("T")[0],
     });
     setIsRevenueOpen(false);
+    load(true);
+  };
+
+  const updateRequestStatus = async (requestId: string, status: string, rejectionReason?: string) => {
+    const { error } = await supabase
+      .from("project_requests")
+      .update({ status, rejection_reason: rejectionReason })
+      .eq("id", requestId);
+    if (error) return toast.error(error.message);
+    toast.success("Solicitação atualizada!");
     load(true);
   };
 
@@ -1424,10 +1438,103 @@ function ProjectDetail() {
                       </div>
                     )}
                   </div>
+
+                  <div className="space-y-4 pt-8 border-t">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Package className="h-5 w-5" /> Ofertas de Materiais e Frete
+                    </h3>
+                    {requests.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhuma oferta de material ou frete recebida.</p>
+                    ) : (
+                      <div className="grid gap-4">
+                        {requests.map((r) => (
+                          <div key={r.id} className="rounded-xl border border-border bg-card p-5">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="capitalize">
+                                  {r.request_type === "material" ? <Package className="h-3 w-3 mr-1" /> : r.request_type === "frete" ? <Truck className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
+                                  {r.request_type}
+                                </Badge>
+                                <p className="font-bold">{names[r.user_id] || "Carregando..."}</p>
+                              </div>
+                              <Badge variant={r.status === "fulfilled" ? "default" : r.status === "cancelled" ? "destructive" : "secondary"}>
+                                {r.status === "open" ? "Pendente" : r.status === "fulfilled" ? "Aceita" : "Recusada"}
+                              </Badge>
+                            </div>
+
+                            <div className="mt-3 space-y-2">
+                              <p className="text-sm text-foreground/80 bg-muted/30 p-3 rounded-lg border border-border/50">
+                                {r.description}
+                              </p>
+                              {r.quantity && <p className="text-xs text-muted-foreground">Quantidade: <span className="font-medium text-foreground">{r.quantity}</span></p>}
+                              <p className="text-xs text-muted-foreground">Contato: <span className="font-medium text-foreground">{r.contact_info}</span></p>
+                              {r.rejection_reason && (
+                                <p className="text-xs text-destructive bg-destructive/5 p-2 rounded border border-destructive/20">
+                                  Motivo da recusa: {r.rejection_reason}
+                                </p>
+                              )}
+                            </div>
+
+                            {r.status === "open" && (
+                              <div className="flex gap-2 mt-4">
+                                <Button className="flex-1" size="sm" onClick={() => updateRequestStatus(r.id, "fulfilled")}>Aceitar</Button>
+                                <Button 
+                                  className="flex-1" 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => {
+                                    setRejectingRequest(r);
+                                    setRequestRejectionReason("");
+                                  }}
+                                >
+                                  Recusar
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
               )}
             </Tabs>
           </div>
+
+          {/* Rejection Dialog */}
+          <Dialog open={!!rejectingRequest} onOpenChange={(open) => !open && setRejectingRequest(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Recusar Oferta de Apoio</DialogTitle>
+                <DialogDescription>
+                  Informe o motivo da recusa para que o apoiador saiba por que a oferta não foi aceita.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-2">
+                <Label htmlFor="rejection-reason">Motivo da Recusa *</Label>
+                <Textarea
+                  id="rejection-reason"
+                  placeholder="Ex: Já conseguimos este material de outra fonte..."
+                  value={requestRejectionReason}
+                  onChange={(e) => setRequestRejectionReason(e.target.value)}
+                  rows={4}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRejectingRequest(null)}>Cancelar</Button>
+                <Button 
+                  variant="destructive" 
+                  disabled={!requestRejectionReason.trim()}
+                  onClick={() => {
+                    updateRequestStatus(rejectingRequest.id, "cancelled", requestRejectionReason);
+                    setRejectingRequest(null);
+                  }}
+                >
+                  Confirmar Recusa
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Right Sidebar */}
           <div className="space-y-6">

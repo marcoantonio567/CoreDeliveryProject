@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { Award, BarChart3, CheckCircle2, Flag, MapPin, Package, Users, Wallet } from "lucide-react";
@@ -18,12 +20,14 @@ function Admin() {
   const [pendingMaterials, setPendingMaterials] = useState<any[]>([]);
   const [reported, setReported] = useState<any[]>([]);
   const [completionReq, setCompletionReq] = useState<any[]>([]);
-  const [freight, setFreight] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [search, setSearch] = useState({ projects: "", materials: "", users: "" });
   const [promoteEmail, setPromoteEmail] = useState("");
+  const [rejectingProject, setRejectingProject] = useState<any>(null);
+  const [rejectingMaterial, setRejectingMaterial] = useState<any>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [metrics, setMetrics] = useState({
     activeProjects: 0,
     completedProjects: 0,
@@ -39,7 +43,6 @@ function Admin() {
       { data: pm },
       { data: r },
       { data: c },
-      { data: fr },
       { data: u },
       { data: ar },
       { data: allP },
@@ -51,11 +54,6 @@ function Admin() {
       supabase.from("materials").select("*").eq("status", "pending").order("created_at"),
       supabase.from("reports").select("project_id, reason, created_at, projects(*)"),
       supabase.from("projects").select("*").eq("completion_status", "completion_requested"),
-      supabase
-        .from("project_requests")
-        .select("*, projects(name)")
-        .eq("request_type", "frete")
-        .order("created_at", { ascending: false }),
       supabase
         .from("profiles")
         .select("id, display_name, created_at")
@@ -77,7 +75,6 @@ function Admin() {
     });
     setReported(Object.values(map).sort((a, b) => b.count - a.count));
     setCompletionReq(c || []);
-    setFreight(fr || []);
     setUsers(u || []);
     setAdminIds(new Set((ar || []).map((x: any) => x.user_id)));
 
@@ -98,8 +95,8 @@ function Admin() {
 
   // Project actions
   const approveProject = async (id: string) => { await supabase.from("projects").update({ status: "approved" }).eq("id", id); toast.success("Aprovado"); reload(); };
-  const rejectProject = async (id: string) => {
-    const reason = reasons[id]; if (!reason) return toast.error("Informe o motivo.");
+  const rejectProject = async (id: string, reason: string) => {
+    if (!reason) return toast.error("Informe o motivo.");
     await supabase.from("projects").update({ status: "rejected", rejection_reason: reason }).eq("id", id);
     toast.success("Reprovado"); reload();
   };
@@ -107,8 +104,8 @@ function Admin() {
 
   // Material actions
   const approveMaterial = async (id: string) => { await supabase.from("materials").update({ status: "approved" }).eq("id", id); toast.success("Aprovado"); reload(); };
-  const rejectMaterial = async (id: string) => {
-    const reason = reasons[id]; if (!reason) return toast.error("Informe o motivo.");
+  const rejectMaterial = async (id: string, reason: string) => {
+    if (!reason) return toast.error("Informe o motivo.");
     await supabase.from("materials").update({ status: "rejected", rejection_reason: reason }).eq("id", id);
     toast.success("Reprovado"); reload();
   };
@@ -121,9 +118,6 @@ function Admin() {
     toast.success("Concluído e certificados emitidos!"); reload();
   };
   const rejectCompletion = async (id: string) => { await supabase.from("projects").update({ completion_status: "completion_rejected" }).eq("id", id); reload(); };
-
-  // Freight
-  const updateFreight = async (id: string, status: string) => { await supabase.from("project_requests").update({ status }).eq("id", id); toast.success("Atualizado"); reload(); };
 
   // Users
   const promote = async (uid: string) => {
@@ -165,10 +159,18 @@ function Admin() {
             {p.images.map((u: string) => <img key={u} src={u} alt="" className="aspect-video w-full object-cover rounded" />)}
           </div>
         )}
-        <Textarea placeholder="Motivo (caso reprovar)" value={reasons[p.id] || ""} onChange={(e) => setReasons({ ...reasons, [p.id]: e.target.value })} className="mt-3" />
         <div className="mt-3 flex gap-2">
           <Button size="sm" onClick={() => approveProject(p.id)}>Aprovar</Button>
-          <Button size="sm" variant="destructive" onClick={() => rejectProject(p.id)}>Reprovar</Button>
+          <Button 
+            size="sm" 
+            variant="destructive" 
+            onClick={() => {
+              setRejectingProject(p);
+              setRejectionReason("");
+            }}
+          >
+            Reprovar
+          </Button>
         </div>
       </div>
     );
@@ -192,10 +194,18 @@ function Admin() {
             {m.images.map((u: string) => <img key={u} src={u} alt="" className="aspect-video w-full object-cover rounded" />)}
           </div>
         )}
-        <Textarea placeholder="Motivo (caso reprovar)" value={reasons[m.id] || ""} onChange={(e) => setReasons({ ...reasons, [m.id]: e.target.value })} className="mt-3" />
         <div className="mt-3 flex gap-2">
           <Button size="sm" onClick={() => approveMaterial(m.id)}>Aprovar</Button>
-          <Button size="sm" variant="destructive" onClick={() => rejectMaterial(m.id)}>Reprovar</Button>
+          <Button 
+            size="sm" 
+            variant="destructive" 
+            onClick={() => {
+              setRejectingMaterial(m);
+              setRejectionReason("");
+            }}
+          >
+            Reprovar
+          </Button>
         </div>
       </div>
     );
@@ -213,7 +223,6 @@ function Admin() {
             <TabsTrigger value="materials">Materiais ({pendingMaterials.length})</TabsTrigger>
             <TabsTrigger value="reports">Denúncias ({reported.length})</TabsTrigger>
             <TabsTrigger value="completion">Conclusões ({completionReq.length})</TabsTrigger>
-            <TabsTrigger value="freight">Frete ({freight.length})</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
           </TabsList>
 
@@ -313,24 +322,6 @@ function Admin() {
             {completionReq.length === 0 && <p className="text-muted-foreground">Sem conclusões pendentes.</p>}
           </TabsContent>
 
-          <TabsContent value="freight" className="space-y-4 mt-4">
-            {freight.map((f) => (
-              <div key={f.id} className="rounded-xl border border-border bg-card p-5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Link to="/projects/$id" params={{ id: f.project_id }} className="font-semibold hover:underline">{f.projects?.name}</Link>
-                  <span className="text-xs rounded-full bg-secondary px-2 py-0.5">{f.status}</span>
-                </div>
-                <p className="mt-2 text-sm whitespace-pre-wrap">{f.description}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{f.quantity ? `Qtd: ${f.quantity} · ` : ""}{f.contact_info} · {new Date(f.created_at).toLocaleString("pt-BR")}</p>
-                <div className="mt-3 flex gap-2">
-                  <Button size="sm" onClick={() => updateFreight(f.id, "fulfilled")}>Marcar atendida</Button>
-                  <Button size="sm" variant="outline" onClick={() => updateFreight(f.id, "cancelled")}>Cancelar</Button>
-                </div>
-              </div>
-            ))}
-            {freight.length === 0 && <p className="text-muted-foreground">Sem solicitações de frete.</p>}
-          </TabsContent>
-
           <TabsContent value="users" className="mt-4 space-y-4">
             <div className="flex gap-2 max-w-xl">
               <Input placeholder="Promover por ID ou nome exato" value={promoteEmail} onChange={(e) => setPromoteEmail(e.target.value)} />
@@ -354,6 +345,76 @@ function Admin() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Rejection Dialog for Projects */}
+        <Dialog open={!!rejectingProject} onOpenChange={(open) => !open && setRejectingProject(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reprovar Projeto</DialogTitle>
+              <DialogDescription>
+                Informe o motivo da reprovação para que o autor saiba o que precisa ser ajustado.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2">
+              <Label htmlFor="proj-rejection-reason">Motivo da Reprovação *</Label>
+              <Textarea
+                id="proj-rejection-reason"
+                placeholder="Ex: Descrição insuficiente, imagens inadequadas..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectingProject(null)}>Cancelar</Button>
+              <Button 
+                variant="destructive" 
+                disabled={!rejectionReason.trim()}
+                onClick={() => {
+                  rejectProject(rejectingProject.id, rejectionReason);
+                  setRejectingProject(null);
+                }}
+              >
+                Confirmar Reprovação
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Rejection Dialog for Materials */}
+        <Dialog open={!!rejectingMaterial} onOpenChange={(open) => !open && setRejectingMaterial(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reprovar Doação de Material</DialogTitle>
+              <DialogDescription>
+                Informe o motivo da reprovação.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2">
+              <Label htmlFor="mat-rejection-reason">Motivo da Reprovação *</Label>
+              <Textarea
+                id="mat-rejection-reason"
+                placeholder="Ex: Material não permitido, informações falsas..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectingMaterial(null)}>Cancelar</Button>
+              <Button 
+                variant="destructive" 
+                disabled={!rejectionReason.trim()}
+                onClick={() => {
+                  rejectMaterial(rejectingMaterial.id, rejectionReason);
+                  setRejectingMaterial(null);
+                }}
+              >
+                Confirmar Reprovação
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

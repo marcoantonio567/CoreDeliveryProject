@@ -342,6 +342,7 @@ export type Database = {
           id: string
           project_id: string
           quantity: number | null
+          rejection_reason: string | null
           request_type: string
           status: string
           user_id: string
@@ -353,6 +354,7 @@ export type Database = {
           id?: string
           project_id: string
           quantity?: number | null
+          rejection_reason?: string | null
           request_type: string
           status?: string
           user_id: string
@@ -364,6 +366,7 @@ export type Database = {
           id?: string
           project_id?: string
           quantity?: number | null
+          rejection_reason?: string | null
           request_type?: string
           status?: string
           user_id?: string
