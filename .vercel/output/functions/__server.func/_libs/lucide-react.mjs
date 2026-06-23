@@ -151,11 +151,11 @@ const createLucideIcon = (iconName, iconNode) => {
  */
 
 
-const __iconNode$D = [
+const __iconNode$F = [
   ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
   ["path", { d: "M19 12H5", key: "x3x0zl" }]
 ];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$D);
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$F);
 
 /**
  * @license lucide-react v0.575.0 - ISC
@@ -165,7 +165,7 @@ const ArrowLeft = createLucideIcon("arrow-left", __iconNode$D);
  */
 
 
-const __iconNode$C = [
+const __iconNode$E = [
   [
     "path",
     {
@@ -175,7 +175,7 @@ const __iconNode$C = [
   ],
   ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
 ];
-const Award = createLucideIcon("award", __iconNode$C);
+const Award = createLucideIcon("award", __iconNode$E);
 
 /**
  * @license lucide-react v0.575.0 - ISC
@@ -185,7 +185,7 @@ const Award = createLucideIcon("award", __iconNode$C);
  */
 
 
-const __iconNode$B = [
+const __iconNode$D = [
   [
     "path",
     {
@@ -217,7 +217,7 @@ const __iconNode$B = [
   ["path", { d: "m12 8 4.74-2.85", key: "3rx089" }],
   ["path", { d: "M12 13.5V8", key: "1io7kd" }]
 ];
-const Boxes = createLucideIcon("boxes", __iconNode$B);
+const Boxes = createLucideIcon("boxes", __iconNode$D);
 
 /**
  * @license lucide-react v0.575.0 - ISC
@@ -227,13 +227,13 @@ const Boxes = createLucideIcon("boxes", __iconNode$B);
  */
 
 
-const __iconNode$A = [
+const __iconNode$C = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ];
-const Calendar = createLucideIcon("calendar", __iconNode$A);
+const Calendar = createLucideIcon("calendar", __iconNode$C);
 
 /**
  * @license lucide-react v0.575.0 - ISC
@@ -243,13 +243,35 @@ const Calendar = createLucideIcon("calendar", __iconNode$A);
  */
 
 
-const __iconNode$z = [
+const __iconNode$B = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "M18 17V9", key: "2bz60n" }],
   ["path", { d: "M13 17V5", key: "1frdt8" }],
   ["path", { d: "M8 17v-3", key: "17ska0" }]
 ];
-const ChartColumn = createLucideIcon("chart-column", __iconNode$z);
+const ChartColumn = createLucideIcon("chart-column", __iconNode$B);
+
+/**
+ * @license lucide-react v0.575.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconNode$A = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
+const ChevronLeft = createLucideIcon("chevron-left", __iconNode$A);
+
+/**
+ * @license lucide-react v0.575.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconNode$z = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$z);
 
 /**
  * @license lucide-react v0.575.0 - ISC
@@ -866,4 +888,4 @@ const __iconNode = [
 ];
 const X = createLucideIcon("x", __iconNode);
 
-export { Award as A, Boxes as B, Clock as C, FolderKanban as F, HardHat as H, Info as I, LoaderCircle as L, MapPin as M, Package as P, QrCode as Q, Shield as S, Trash2 as T, User as U, Wallet as W, X, LayoutDashboard as a, Hammer as b, HandHeart as c, PanelLeft as d, LogOut as e, CircleAlert as f, CircleX as g, CircleCheck as h, Phone as i, Mail as j, Plus as k, Pencil as l, ChartColumn as m, Calendar as n, TrendingUp as o, Sparkles as p, Users as q, Flag as r, House as s, Heart as t, History as u, Truck as v, Copy as w, ShieldCheck as x, ArrowLeft as y };
+export { Award as A, Boxes as B, Clock as C, ArrowLeft as D, FolderKanban as F, HardHat as H, Info as I, LoaderCircle as L, MapPin as M, Package as P, QrCode as Q, Shield as S, Trash2 as T, User as U, Wallet as W, X, LayoutDashboard as a, Hammer as b, HandHeart as c, PanelLeft as d, LogOut as e, CircleAlert as f, CircleX as g, CircleCheck as h, Phone as i, Mail as j, Plus as k, Pencil as l, ChartColumn as m, Calendar as n, TrendingUp as o, Sparkles as p, Users as q, Flag as r, House as s, Heart as t, ChevronLeft as u, ChevronRight as v, History as w, Truck as x, Copy as y, ShieldCheck as z };

@@ -1,1 +1,0 @@
-import{s as r}from"./index-DxbfRGpF.js";async function c(n,e){const o=[];for(const t of e){const p=t.name.split(".").pop(),a=`${n}/${Date.now()}-${Math.random().toString(36).slice(2)}.${p}`,{error:s}=await r.storage.from("uploads").upload(a,t);if(s)throw s;const{data:l}=r.storage.from("uploads").getPublicUrl(a);o.push(l.publicUrl)}return o}export{c as u};

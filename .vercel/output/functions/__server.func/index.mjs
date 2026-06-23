@@ -32,9 +32,9 @@ const findRouteRules = /* @__PURE__ */ (() => { const $0=[{name:"headers",route:
 
 
 
-const _lazy_Xg_K3r = defineLazyEventHandler(() => import('./_chunks/ssr-renderer.mjs'));
+const _lazy_xrw39y = defineLazyEventHandler(() => import('./_chunks/ssr-renderer.mjs'));
 
-const findRoute = /* @__PURE__ */ (() => {const data={route:"/**",handler:_lazy_Xg_K3r};return ((_m, p)=>{return {data,params:{"_":p.slice(1)}};})})();
+const findRoute = /* @__PURE__ */ (() => {const data={route:"/**",handler:_lazy_xrw39y};return ((_m, p)=>{return {data,params:{"_":p.slice(1)}};})})();
 
 const errorHandler$1 = (error, event) => {
 	const res = defaultHandler(error, event);
